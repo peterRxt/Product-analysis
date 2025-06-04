@@ -1,0 +1,455 @@
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #3498db;
+    --accent-color: #e74c3c;
+    --light-color: #ecf0f1;
+    --dark-color: #2c3e50;
+    --success-color: #27ae60;
+    --warning-color: #f39c12;
+    --danger-color: #e74c3c;
+    --border-radius: 4px;
+    --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s ease;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #f5f7fa;
+    color: #333;
+    line-height: 1.6;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--box-shadow);
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.8rem;
+}
+
+.header-actions button {
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: var(--transition);
+    font-size: 0.9rem;
+}
+
+.header-actions button:hover {
+    background-color: #2980b9;
+}
+
+.main-content {
+    display: flex;
+    flex: 1;
+    padding: 1rem;
+    gap: 1.5rem;
+}
+
+.control-panel {
+    width: 300px;
+    background-color: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--box-shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.results-area {
+    flex: 1;
+    background-color: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--box-shadow);
+    display: flex;
+    flex-direction: column;
+}
+
+.upload-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.upload-btn {
+    background-color: var(--secondary-color);
+    color: white;
+    padding: 0.8rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    transition: var(--transition);
+}
+
+.upload-btn:hover {
+    background-color: #2980b9;
+}
+
+#fileInput {
+    display: none;
+}
+
+.file-info {
+    font-size: 0.85rem;
+    color: var(--dark-color);
+    padding: 0.5rem;
+    background-color: var(--light-color);
+    border-radius: var(--border-radius);
+}
+
+.column-mapping {
+    display: none;
+    flex-direction: column;
+    gap: 1rem;
+    background-color: var(--light-color);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+}
+
+.column-mapping h3 {
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mapping-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.mapping-row label {
+    font-weight: 500;
+    font-size: 0.85rem;
+}
+
+.mapping-row select {
+    padding: 0.6rem;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    background-color: white;
+}
+
+.confirm-btn {
+    background-color: var(--success-color);
+    color: white;
+    border: none;
+    padding: 0.8rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    transition: var(--transition);
+    margin-top: 0.5rem;
+}
+
+.confirm-btn:hover {
+    background-color: #219653;
+}
+
+.analysis-section, .visualization-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.analysis-section h3, .visualization-section h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.analysis-select, .chart-select {
+    padding: 0.8rem;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    background-color: white;
+    width: 100%;
+}
+
+.analysis-params {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.analyze-btn, .visualize-btn {
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    padding: 0.8rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    transition: var(--transition);
+}
+
+.analyze-btn:hover, .visualize-btn:hover {
+    background-color: #2980b9;
+}
+
+.message-area {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: var(--border-radius);
+    display: none;
+}
+
+.message-area.success {
+    background-color: #d4edda;
+    color: #155724;
+    display: block;
+}
+
+.message-area.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    display: block;
+}
+
+.results-tabs {
+    display: flex;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 1rem;
+}
+
+.tab-btn {
+    padding: 0.8rem 1.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    font-weight: 500;
+    color: #666;
+}
+
+.tab-btn.active {
+    color: var(--secondary-color);
+}
+
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: var(--secondary-color);
+}
+
+.results-section {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+}
+
+.results-section.active {
+    display: flex;
+}
+
+.table-container {
+    overflow-x: auto;
+    border-radius: var(--border-radius);
+    flex: 1;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+th, td {
+    padding: 0.8rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 500;
+    position: sticky;
+    top: 0;
+}
+
+tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+tr:hover {
+    background-color: #f1f1f1;
+}
+
+.chart-container {
+    position: relative;
+    height: 400px;
+    width: 100%;
+    margin-bottom: 1rem;
+    overflow: auto;
+}
+
+#chartCanvas {
+    min-width: 600px;
+    min-height: 400px;
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+}
+
+.chart-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.8rem;
+    padding: 1rem 0;
+}
+
+.export-btn {
+    background-color: var(--success-color);
+    color: white;
+    border: none;
+    padding: 0.6rem 1rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: var(--transition);
+}
+
+.export-btn:hover {
+    background-color: #219653;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Responsive styles */
+@media (max-width: 992px) {
+    .main-content {
+        flex-direction: column;
+    }
+    
+    .control-panel {
+        width: 100%;
+    }
+
+    .chart-container {
+        height: 350px;
+    }
+}
+
+@media (max-width: 768px) {
+    .chart-actions {
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    .export-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 576px) {
+    header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .header-actions {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .results-tabs {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    th, td {
+        padding: 0.6rem;
+        font-size: 0.8rem;
+    }
+
+    .chart-container {
+        height: 300px;
+    }
+
+    #chartCanvas {
+        min-width: 400px;
+        min-height: 300px;
+    }
+}
+
+@media (max-width: 400px) {
+    .main-content {
+        padding: 0.5rem;
+    }
+
+    .control-panel, .results-area {
+        padding: 1rem;
+    }
+
+    #chartCanvas {
+        min-width: 300px;
+    }
+}
