@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+Document.addEventListener('DOMContentLoaded', function() {
     // DOM Elements
     const fileInput = document.getElementById('fileInput');
     const fileInfo = document.getElementById('fileInfo');
@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function() {
             referenceHeaders.forEach((header, index) => {
                 possibleColumns[colType].forEach(possibleName => {
                     const score = similarity(header, possibleName);
-                    if (score > bestMatchScore && score > 0.6) {
+                    if (score > bestMatchScore && score > 0.6) { // Increased threshold for better accuracy
                         bestMatchScore = score;
                         bestMatchIndex = index;
                     }
@@ -135,6 +135,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        // Ensure all required columns are found, if not, show mapping dialog
         if (!foundColumns.description || !foundColumns.quantity || !foundColumns.sales) {
             showColumnMappingDialog(referenceHeaders);
         } else {
@@ -202,35 +203,47 @@ document.addEventListener('DOMContentLoaded', function() {
         const productMap = new Map();
         (allRows || []).forEach(row => {
             if (!row || row.length === 0) return;
+
             const description = row[mappedColumns.description]?.toString().trim();
             const quantity = parseFloat(row[mappedColumns.quantity]) || 0;
             const sales = parseFloat(row[mappedColumns.sales]) || 0;
-            const cost = mappedColumns.cost !== null ? parseFloat(row[mappedColumns.cost]) || 0 : null;
+            // Ensure cost is parsed correctly, handle cases where it might be empty or non-numeric
+            const cost = mappedColumns.cost !== null && !isNaN(parseFloat(row[mappedColumns.cost])) ? parseFloat(row[mappedColumns.cost]) : 0; // Default to 0 if cost is not mapped or invalid
+
             if (!description) return;
 
+            // Find existing product key with high similarity or use the current description
             let productKey = [...productMap.keys()].find(k => similarity(description, k) > 0.8) || description;
 
             if (productMap.has(productKey)) {
                 const item = productMap.get(productKey);
                 item.quantity += quantity;
                 item.sales += sales;
-                if (cost !== null) {
+                // Accumulate cost only if the column was mapped
+                if (mappedColumns.cost !== null) {
                     item.cost += cost;
-                    item.profit = item.sales - item.cost;
-                    item.unitPrice = item.sales / item.quantity;
                 }
             } else {
                 productMap.set(productKey, {
                     description: productKey,
                     quantity,
                     sales,
-                    cost: cost !== null ? cost : undefined,
-                    profit: cost !== null ? sales - cost : undefined,
-                    unitPrice: quantity > 0 ? sales / quantity : 0
+                    cost: mappedColumns.cost !== null ? cost : 0, // Initialize cost only if mapped
                 });
             }
         });
-        uploadedData = Array.from(productMap.values());
+
+        // After aggregation, calculate derived values like profit and unitPrice
+        uploadedData = Array.from(productMap.values()).map(item => {
+            const profit = item.sales - item.cost; // Profit calculation corrected
+            return {
+                ...item,
+                profit: profit,
+                unitPrice: item.quantity > 0 ? item.sales / item.quantity : 0,
+                profitMargin: item.sales > 0 ? (profit / item.sales) * 100 : 0 // Profit margin calculation
+            };
+        });
+        
         showMessage('Data uploaded and processed successfully!', 'success');
     }
 
@@ -263,15 +276,15 @@ document.addEventListener('DOMContentLoaded', function() {
             data.sort((a, b) => a.quantity - b.quantity);
             data = data.slice(0, count);
         } else if (type === 'contribution') {
-            const total = data.reduce((sum, d) => sum + d.sales, 0);
-            data.forEach(d => d.contribution = total ? (d.sales / total) * 100 : 0);
+            const totalSales = data.reduce((sum, d) => sum + d.sales, 0);
+            data.forEach(d => d.contribution = totalSales ? (d.sales / totalSales) * 100 : 0);
             data.sort((a, b) => b.contribution - a.contribution);
         } else if (type === 'profitability') {
-            if (mappedColumns.cost === null) return showMessage('Profitability analysis requires cost data', 'error');
-            data.forEach(d => {
-                d.profit = d.sales - (d.cost || 0);
-                d.profitMargin = d.sales > 0 ? (d.profit / d.sales) * 100 : 0;
-            });
+            // Check if cost column was mapped. If not, don't run profitability analysis.
+            if (mappedColumns.cost === null || mappedColumns.cost === undefined) { 
+                return showMessage('Profitability analysis requires "Cost" data. Please map the "Cost" column during file upload.', 'error');
+            }
+            // Profit and profitMargin are already calculated in processUploadedData
             data.sort((a, b) => b.profit - a.profit);
         }
 
@@ -284,16 +297,22 @@ document.addEventListener('DOMContentLoaded', function() {
         resultsTable.innerHTML = '';
         data.forEach(item => {
             const row = document.createElement('tr');
+            let profitDisplay = '';
+            if (type === 'profitability' || mappedColumns.cost !== null) { // Show profit if profitability analysis or cost was mapped
+                profitDisplay = formatNumber(item.profit);
+            } else if (type === 'contribution') {
+                profitDisplay = `${item.contribution.toFixed(2)}%`;
+            } else {
+                // For fast/slow moving, show profit if cost was mapped, otherwise N/A
+                profitDisplay = mappedColumns.cost !== null ? formatNumber(item.profit) : 'N/A';
+            }
+
             row.innerHTML = `
                 <td>${item.description}</td>
                 <td>${formatNumber(item.quantity)}</td>
                 <td>${formatNumber(item.sales)}</td>
-                <td>${item.quantity > 0 ? formatNumber(item.sales / item.quantity) : 'N/A'}</td>
-                <td>${
-                    type === 'profitability' ? formatNumber(item.profit) :
-                    type === 'contribution' ? `${item.contribution.toFixed(2)}%` :
-                    formatNumber(item.profit ?? 0)
-                }</td>
+                <td>${item.quantity > 0 ? formatNumber(item.unitPrice) : 'N/A'}</td>
+                <td>${profitDisplay}</td>
             `;
             resultsTable.appendChild(row);
         });
@@ -307,13 +326,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const ctx = chartCanvas.getContext('2d');
         const labels = currentReportData.map(i => i.description);
-        const data = currentReportData.map(i =>
-            analysisType.value === 'contribution' ? i.contribution :
-            analysisType.value === 'profitability' ? i.profit :
-            ['fastMoving', 'slowMoving'].includes(analysisType.value) ? i.quantity :
-            i.sales
-        );
-        const label = analysisType.options[analysisType.selectedIndex].text;
+        let data = [];
+        let label = '';
+
+        // Determine data and label based on analysis type
+        if (analysisType.value === 'contribution') {
+            data = currentReportData.map(i => i.contribution);
+            label = 'Contribution (%)';
+        } else if (analysisType.value === 'profitability') {
+            if (mappedColumns.cost === null) {
+                return showMessage('Profitability chart requires cost data. Please ensure the "Cost" column was mapped.', 'error');
+            }
+            data = currentReportData.map(i => i.profit);
+            label = 'Profit';
+        } else if (['fastMoving', 'slowMoving'].includes(analysisType.value)) {
+            data = currentReportData.map(i => i.quantity);
+            label = 'Quantity Sold';
+        } else { // Default to sales if no specific analysis or sales is a relevant general metric
+            data = currentReportData.map(i => i.sales);
+            label = 'Total Sales';
+        }
+
         const bgColors = generateColors(labels.length);
 
         currentChart = new Chart(ctx, {
@@ -346,7 +379,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         callbacks: {
                             label: context => {
                                 let value = context.parsed.y;
-                                let suffix = analysisType.value === 'contribution' ? '%' : '';
+                                let suffix = (analysisType.value === 'contribution' || analysisType.value === 'profitability') ? '%' : ''; // Apply % only for these types
                                 return `${context.dataset.label}: ${formatNumber(value)}${suffix}`;
                             }
                         }
@@ -391,15 +424,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
         try {
             const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.json_to_sheet(currentReportData.map(item => ({
-                'Product': item.description,
-                'Quantity': item.quantity,
-                'Total Sales': item.sales,
-                'Unit Price': item.unitPrice,
-                'Profit': item.profit || 0,
-                ...(analysisType.value === 'contribution' && {'Contribution (%)': item.contribution}),
-                ...(analysisType.value === 'profitability' && {'Profit Margin (%)': item.profitMargin})
-            })));
+            const exportItems = currentReportData.map(item => {
+                const base = {
+                    'Product': item.description,
+                    'Quantity': item.quantity,
+                    'Total Sales': item.sales,
+                    'Unit Price': item.unitPrice
+                };
+                if (mappedColumns.cost !== null) { // Only add Cost and Profit if cost column was mapped
+                    base['Cost'] = item.cost;
+                    base['Profit'] = item.profit;
+                }
+                if (analysisType.value === 'contribution') {
+                    base['Contribution (%)'] = item.contribution;
+                }
+                if (analysisType.value === 'profitability' && mappedColumns.cost !== null) {
+                    base['Profit Margin (%)'] = item.profitMargin;
+                }
+                return base;
+            });
+            
+            const ws = XLSX.utils.json_to_sheet(exportItems);
             
             XLSX.utils.book_append_sheet(wb, ws, "Analysis Results");
             XLSX.writeFile(wb, `Product_Analysis_${new Date().toISOString().slice(0,10)}.xlsx`);
@@ -460,14 +505,28 @@ document.addEventListener('DOMContentLoaded', function() {
             // Table header
             const thead = document.createElement('thead');
             const headerRow = document.createElement('tr');
-            [
+            
+            const tableHeaders = [
                 'Product',
                 'Quantity',
                 'Total Sales',
-                'Unit Price',
-                analysisType.value === 'contribution' ? 'Contribution (%)' : 
-                analysisType.value === 'profitability' ? 'Profit Margin (%)' : 'Profit'
-            ].forEach(text => {
+                'Unit Price'
+            ];
+
+            if (mappedColumns.cost !== null) { // Only add Cost and Profit/Profit Margin if cost column was mapped
+                 tableHeaders.push('Cost'); // Added cost column to PDF
+                 tableHeaders.push(
+                    analysisType.value === 'contribution' ? 'Contribution (%)' : 
+                    analysisType.value === 'profitability' ? 'Profit Margin (%)' : 'Profit'
+                 );
+            } else {
+                 tableHeaders.push(
+                    analysisType.value === 'contribution' ? 'Contribution (%)' : 'Profit' // If no cost, profit is still theoretically Sales - 0
+                 );
+            }
+
+
+            tableHeaders.forEach(text => {
                 const th = document.createElement('th');
                 th.textContent = text;
                 th.style.border = '1px solid #000';
@@ -483,15 +542,29 @@ document.addEventListener('DOMContentLoaded', function() {
             const tbody = document.createElement('tbody');
             currentReportData.forEach(item => {
                 const row = document.createElement('tr');
-                [
+                
+                const rowData = [
                     item.description,
                     formatNumber(item.quantity),
                     formatNumber(item.sales),
-                    item.quantity > 0 ? formatNumber(item.sales / item.quantity) : 'N/A',
-                    analysisType.value === 'contribution' ? `${item.contribution.toFixed(2)}%` :
-                    analysisType.value === 'profitability' ? `${item.profitMargin.toFixed(2)}%` :
-                    formatNumber(item.profit ?? 0)
-                ].forEach(text => {
+                    item.quantity > 0 ? formatNumber(item.unitPrice) : 'N/A'
+                ];
+
+                if (mappedColumns.cost !== null) { // Include cost and profit/profit margin if cost column was mapped
+                    rowData.push(formatNumber(item.cost));
+                    rowData.push(
+                        analysisType.value === 'contribution' ? `${item.contribution.toFixed(2)}%` :
+                        analysisType.value === 'profitability' ? `${item.profitMargin.toFixed(2)}%` :
+                        formatNumber(item.profit ?? 0) // Fallback to profit if not specific analysis
+                    );
+                } else { // Handle cases where cost is not mapped
+                    rowData.push(
+                        analysisType.value === 'contribution' ? `${item.contribution.toFixed(2)}%` :
+                        formatNumber(item.profit ?? 0) // If no cost, profit is just sales by default
+                    );
+                }
+
+                rowData.forEach(text => {
                     const td = document.createElement('td');
                     td.textContent = text;
                     td.style.border = '1px solid #ddd';
@@ -596,7 +669,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function formatNumber(num) {
-        return isNaN(num) ? '0' : Number(num).toLocaleString(undefined, { 
+        return isNaN(num) ? '0.00' : Number(num).toLocaleString(undefined, { 
             minimumFractionDigits: 2, 
             maximumFractionDigits: 2 
         });
