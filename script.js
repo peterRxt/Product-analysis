@@ -9,7 +9,7 @@ Document.addEventListener('DOMContentLoaded', function() {
     const analysisParams = document.getElementById('analysisParams');
     const runAnalysisBtn = document.getElementById('runAnalysisBtn');
     const chartType = document.getElementById('chartType');
-    const generateChartBtn = document('generateChartBtn');
+    const generateChartBtn = document.getElementById('generateChartBtn'); // Corrected typo here
     const messageArea = document.getElementById('messageArea');
     const tabButtons = document.querySelectorAll('.tab-btn');
     const resultsSections = document.querySelectorAll('.results-section');
@@ -149,8 +149,8 @@ Document.addEventListener('DOMContentLoaded', function() {
         const requiredFields = [
             { id: 'description', label: 'Product Description', required: true },
             { id: 'quantity', label: 'Quantity', required: true },
-            { id: 'sales', label: 'Total Sales', required: true },
-            { id: 'cost', label: 'Cost (per unit, if available)', required: false } // Clarified label for cost
+            { id: 'sales', label: 'Total Sales (per line item)', required: true }, // Clarified label
+            { id: 'cost', label: 'Unit Cost (cost per unit, if available)', required: false } // Clarified label for unit cost
         ];
 
         requiredFields.forEach(field => {
@@ -206,14 +206,14 @@ Document.addEventListener('DOMContentLoaded', function() {
 
             const description = row[mappedColumns.description]?.toString().trim();
             const quantity = parseFloat(row[mappedColumns.quantity]) || 0;
-            const sales = parseFloat(row[mappedColumns.sales]) || 0;
-            
-            let unitCost = 0;
-            let totalCost = 0;
+            const salesLineItem = parseFloat(row[mappedColumns.sales]) || 0; // Renamed for clarity
+
+            let unitCostInput = 0; // Cost from the input sheet, assumed to be per unit
+            let totalCostLineItem = 0; // Total cost for this specific line item
 
             if (mappedColumns.cost !== null && !isNaN(parseFloat(row[mappedColumns.cost]))) {
-                unitCost = parseFloat(row[mappedColumns.cost]);
-                totalCost = unitCost * quantity; // THIS IS THE CRUCIAL CORRECTION
+                unitCostInput = parseFloat(row[mappedColumns.cost]);
+                totalCostLineItem = unitCostInput * quantity; // Calculate total cost for this line item
             }
 
             if (!description) return;
@@ -224,28 +224,28 @@ Document.addEventListener('DOMContentLoaded', function() {
             if (productMap.has(productKey)) {
                 const item = productMap.get(productKey);
                 item.quantity += quantity;
-                item.sales += sales;
-                if (mappedColumns.cost !== null) { // Accumulate total cost only if the column was mapped
-                    item.cost += totalCost;
+                item.sales += salesLineItem; // Accumulate line item sales
+                if (mappedColumns.cost !== null) { // Accumulate total cost for this product
+                    item.totalCost += totalCostLineItem;
                 }
             } else {
                 productMap.set(productKey, {
                     description: productKey,
                     quantity,
-                    sales,
-                    cost: mappedColumns.cost !== null ? totalCost : 0, // Store total cost
+                    sales: salesLineItem, // Initial sales for this product
+                    totalCost: mappedColumns.cost !== null ? totalCostLineItem : 0, // Initial total cost for this product
                 });
             }
         });
 
-        // After aggregation, calculate derived values like profit and unitPrice
+        // After aggregation, calculate derived values
         uploadedData = Array.from(productMap.values()).map(item => {
-            const profit = item.sales - item.cost; 
+            const profit = item.sales - item.totalCost; // Profit based on aggregated total sales and total cost
             return {
                 ...item,
                 profit: profit,
-                unitPrice: item.quantity > 0 ? item.sales / item.quantity : 0, // This is average unit selling price
-                unitCostAvg: item.quantity > 0 ? item.cost / item.quantity : 0, // New: Average unit cost
+                avgUnitPrice: item.quantity > 0 ? item.sales / item.quantity : 0, // Average selling price per unit
+                avgUnitCost: item.quantity > 0 ? item.totalCost / item.quantity : 0, // Average cost per unit (aggregated total cost / aggregated quantity)
                 profitMargin: item.sales > 0 ? (profit / item.sales) * 100 : 0 
             };
         });
@@ -288,7 +288,7 @@ Document.addEventListener('DOMContentLoaded', function() {
         } else if (type === 'profitability') {
             // Check if cost column was mapped. If not, don't run profitability analysis.
             if (mappedColumns.cost === null || mappedColumns.cost === undefined) { 
-                return showMessage('Profitability analysis requires "Cost (per unit)" data. Please map the "Cost" column during file upload.', 'error');
+                return showMessage('Profitability analysis requires "Unit Cost" data. Please map the "Cost" column during file upload.', 'error');
             }
             // Profit and profitMargin are already calculated in processUploadedData
             data.sort((a, b) => b.profit - a.profit);
@@ -303,23 +303,23 @@ Document.addEventListener('DOMContentLoaded', function() {
         resultsTable.innerHTML = '';
         data.forEach(item => {
             const row = document.createElement('tr');
-            let profitDisplay = '';
-            // Show profit if profitability analysis or cost was mapped (and thus profit is calculated)
-            if (type === 'profitability' || mappedColumns.cost !== null) { 
-                profitDisplay = formatNumber(item.profit);
-            } else if (type === 'contribution') {
-                profitDisplay = `${item.contribution.toFixed(2)}%`;
-            } else {
-                // For fast/slow moving, show profit if cost was mapped, otherwise N/A
-                profitDisplay = mappedColumns.cost !== null ? formatNumber(item.profit) : 'N/A';
+            let profitOrContributionDisplay = ''; // Unified variable for profit/contribution column
+            
+            if (type === 'contribution') {
+                profitOrContributionDisplay = `${item.contribution.toFixed(2)}%`;
+            } else if (mappedColumns.cost !== null) { // Show profit if cost was mapped
+                profitOrContributionDisplay = formatNumber(item.profit);
+            } else { // If no cost, profit is N/A for Fast/Slow/Default, or contribution was handled
+                profitOrContributionDisplay = 'N/A'; // For fast/slow moving without cost
             }
 
             row.innerHTML = `
                 <td>${item.description}</td>
                 <td>${formatNumber(item.quantity)}</td>
                 <td>${formatNumber(item.sales)}</td>
-                <td>${item.quantity > 0 ? formatNumber(item.unitPrice) : 'N/A'}</td>
-                <td>${profitDisplay}</td>
+                <td>${item.quantity > 0 ? formatNumber(item.avgUnitPrice) : 'N/A'}</td>
+                <td>${mappedColumns.cost !== null ? formatNumber(item.avgUnitCost) : 'N/A'}</td>
+                <td>${profitOrContributionDisplay}</td>
             `;
             resultsTable.appendChild(row);
         });
@@ -342,10 +342,10 @@ Document.addEventListener('DOMContentLoaded', function() {
             label = 'Contribution (%)';
         } else if (analysisType.value === 'profitability') {
             if (mappedColumns.cost === null) {
-                return showMessage('Profitability chart requires cost data. Please ensure the "Cost (per unit)" column was mapped.', 'error');
+                return showMessage('Profitability chart requires "Unit Cost" data. Please ensure the "Cost" column was mapped.', 'error');
             }
             data = currentReportData.map(i => i.profit);
-            label = 'Total Profit'; // Changed label to "Total Profit" for clarity
+            label = 'Total Profit';
         } else if (['fastMoving', 'slowMoving'].includes(analysisType.value)) {
             data = currentReportData.map(i => i.quantity);
             label = 'Quantity Sold';
@@ -386,8 +386,7 @@ Document.addEventListener('DOMContentLoaded', function() {
                         callbacks: {
                             label: context => {
                                 let value = context.parsed.y;
-                                let suffix = (analysisType.value === 'contribution') ? '%' : ''; // Apply % only for contribution
-                                // For profitability, don't add % suffix to profit value
+                                let suffix = (analysisType.value === 'contribution') ? '%' : '';
                                 return `${context.dataset.label}: ${formatNumber(value)}${suffix}`;
                             }
                         }
@@ -409,14 +408,9 @@ Document.addEventListener('DOMContentLoaded', function() {
                                 size: 10
                             }
                         }
-                    },
-                    x: {
-                        ticks: {
-                            font: {
-                                size: 10
-                            }
-                        }
                     }
+                    // Removed x-axis ticks customization if labels are long
+                    // Consider adding `autoSkip: true` or `maxRotation: 90` if labels overlap
                 }
             }
         });
@@ -437,11 +431,11 @@ Document.addEventListener('DOMContentLoaded', function() {
                     'Product': item.description,
                     'Quantity': item.quantity,
                     'Total Sales': item.sales,
-                    'Average Unit Price': item.unitPrice // Changed to "Average Unit Price" for clarity
+                    'Average Unit Price': item.avgUnitPrice 
                 };
                 if (mappedColumns.cost !== null) { 
-                    base['Total Cost'] = item.cost; // Exporting total cost now
-                    base['Average Unit Cost'] = item.unitCostAvg; // New: Export average unit cost
+                    base['Total Cost'] = item.totalCost; // Exporting total cost now
+                    base['Average Unit Cost'] = item.avgUnitCost; 
                     base['Profit'] = item.profit;
                 }
                 if (analysisType.value === 'contribution') {
@@ -524,14 +518,14 @@ Document.addEventListener('DOMContentLoaded', function() {
 
             if (mappedColumns.cost !== null) { 
                  tableHeaders.push('Total Cost'); 
-                 tableHeaders.push('Avg. Unit Cost'); // New: Add average unit cost to PDF
+                 tableHeaders.push('Avg. Unit Cost'); 
                  tableHeaders.push(
                     analysisType.value === 'contribution' ? 'Contribution (%)' : 
                     analysisType.value === 'profitability' ? 'Profit Margin (%)' : 'Profit'
                  );
-            } else {
+            } else { // If no cost, only contribution makes sense for profit-like column
                  tableHeaders.push(
-                    analysisType.value === 'contribution' ? 'Contribution (%)' : 'Profit' 
+                    analysisType.value === 'contribution' ? 'Contribution (%)' : 'Profit' // If no cost, profit is still sales-0
                  );
             }
 
@@ -557,12 +551,12 @@ Document.addEventListener('DOMContentLoaded', function() {
                     item.description,
                     formatNumber(item.quantity),
                     formatNumber(item.sales),
-                    item.quantity > 0 ? formatNumber(item.unitPrice) : 'N/A'
+                    item.quantity > 0 ? formatNumber(item.avgUnitPrice) : 'N/A'
                 ];
 
                 if (mappedColumns.cost !== null) { 
-                    rowData.push(formatNumber(item.cost)); // Total cost
-                    rowData.push(formatNumber(item.unitCostAvg)); // Average unit cost
+                    rowData.push(formatNumber(item.totalCost)); 
+                    rowData.push(formatNumber(item.avgUnitCost)); 
                     rowData.push(
                         analysisType.value === 'contribution' ? `${item.contribution.toFixed(2)}%` :
                         analysisType.value === 'profitability' ? `${item.profitMargin.toFixed(2)}%` :
