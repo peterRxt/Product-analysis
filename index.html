@@ -3,111 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product Analysis Dashboard</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <title>Product Analysis App</title>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1><i class="fas fa-chart-line"></i> Product Analysis Dashboard</h1>
-            <div class="header-actions">
-                <button id="homeBtn"><i class="fas fa-home"></i> Home</button>
-                <button id="exportBtn"><i class="fas fa-file-export"></i> Export Data</button>
-                <button id="resetBtn"><i class="fas fa-redo"></i> Reset</button>
+
+    <header>
+        <h1>Product Sales Analyzer</h1>
+        <button id="homeBtn">Home</button>
+    </header>
+
+    <main>
+        <section class="card upload-section">
+            <h2>1. Upload Data</h2>
+            <input type="file" id="fileInput" accept=".xlsx, .xls" multiple>
+            <p id="fileInfo">No file selected</p>
+        </section>
+
+        <section class="card column-mapping" id="columnMapping" style="display: none;">
+            <h2>2. Map Columns</h2>
+            <div id="mappingFields">
+                </div>
+            <button id="confirmMappingBtn">Confirm Mapping</button>
+        </section>
+
+        <section class="card analysis-section">
+            <h2>3. Run Analysis</h2>
+            <div class="input-group">
+                <label for="analysisType">Analysis Type:</label>
+                <select id="analysisType">
+                    <option value="">-- Select Analysis --</option>
+                    <option value="fastMoving">Fast-Moving Products</option>
+                    <option value="slowMoving">Slow-Moving Products</option>
+                    <option value="contribution">Sales Contribution</option>
+                    <option value="profitability">Profitability Analysis</option>
+                </select>
             </div>
-        </header>
-
-        <div class="main-content">
-            <div class="control-panel">
-                <div class="upload-section">
-                    <input type="file" id="fileInput" accept=".xlsx, .xls" multiple>
-                    <label for="fileInput" class="upload-btn">
-                        <i class="fas fa-upload"></i> Upload Excel Files
-                    </label>
-                    <div id="fileInfo" class="file-info"></div>
+            <div id="analysisParams">
                 </div>
+            <button id="runAnalysisBtn">Run Analysis</button>
+        </section>
 
-                <div class="column-mapping" id="columnMapping">
-                    <h3><i class="fas fa-columns"></i> Map Columns</h3>
-                    <div id="mappingFields"></div>
-                    <button id="confirmMappingBtn" class="confirm-btn">
-                        <i class="fas fa-check"></i> Confirm Mapping
-                    </button>
+        <section class="card visualization-section">
+            <h2>4. Visualize & Export</h2>
+            <div class="tab-buttons">
+                <button class="tab-btn active" data-tab="tableResults">Table Results</button>
+                <button class="tab-btn" data-tab="chartResults">Chart Visualization</button>
+            </div>
+
+            <div id="tableResults" class="results-section active">
+                <h3>Analysis Report</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Quantity</th>
+                                <th>Total Sales</th>
+                                <th>Avg. Unit Price</th>
+                                <th>Avg. Unit Cost</th>
+                                <th>Profit / Contribution</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTable">
+                            </tbody>
+                    </table>
                 </div>
+                <div class="export-actions">
+                    <button id="exportBtn" class="export-btn"><i class="fas fa-file-excel"></i> Export Excel</button>
+                    </div>
+            </div>
 
-                <div class="analysis-section">
-                    <h3><i class="fas fa-chart-bar"></i> Analysis Type</h3>
-                    <select id="analysisType" class="analysis-select">
-                        <option value="">-- Select Analysis --</option>
-                        <option value="fastMoving">Fast Moving Items</option>
-                        <option value="slowMoving">Slow Moving Items</option>
-                        <option value="contribution">Contribution Analysis</option>
-                        <option value="profitability">Profitability</option>
-                    </select>
-                    <div id="analysisParams"></div>
-                    <button id="runAnalysisBtn" class="analyze-btn">
-                        <i class="fas fa-play"></i> Run Analysis
-                    </button>
-                </div>
-
-                <div class="visualization-section">
-                    <h3><i class="fas fa-chart-pie"></i> Visualization</h3>
-                    <select id="chartType" class="chart-select">
-                        <option value="">-- Select Chart --</option>
+            <div id="chartResults" class="results-section">
+                <h3>Chart Visualization</h3>
+                <div class="input-group">
+                    <label for="chartType">Chart Type:</label>
+                    <select id="chartType">
+                        <option value="">-- Select Chart Type --</option>
                         <option value="bar">Bar Chart</option>
-                        <option value="line">Line Chart</option>
                         <option value="pie">Pie Chart</option>
                         <option value="doughnut">Doughnut Chart</option>
                     </select>
-                    <button id="generateChartBtn" class="visualize-btn">
-                        <i class="fas fa-chart-line"></i> Generate Chart
-                    </button>
+                    <button id="generateChartBtn">Generate Chart</button>
                 </div>
+                <div class="chart-container">
+                    <canvas id="chartCanvas"></canvas>
+                </div>
+                <div class="chart-actions">
+                    <button id="exportChartBtn" class="export-btn"><i class="fas fa-image"></i> Export Chart (PNG)</button>
+                    </div>
+            </div>
+        </section>
+
+        <div id="messageArea" class="message-area" style="display: none;">
             </div>
 
-            <div class="results-area">
-                <div id="messageArea" class="message-area"></div>
-                
-                <div class="results-tabs">
-                    <button class="tab-btn active" data-tab="tableResults">Table View</button>
-                    <button class="tab-btn" data-tab="chartResults">Chart View</button>
-                </div>
-                
-                <div id="tableResults" class="results-section active">
-                    <div class="table-container">
-                        <table id="resultsTable">
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Quantity</th>
-                                    <th>Total Sales</th>
-                                    <th>Unit Price</th>
-                                    <th>Profit</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <div id="chartResults" class="results-section">
-                    <div class="chart-container">
-                        <canvas id="chartCanvas"></canvas>
-                    </div>
-                    <div class="chart-actions">
-                        <button id="exportChartBtn" class="export-btn">
-                            <i class="fas fa-download"></i> Export Chart
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-<!-- Add this line before the closing </body> tag -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+        <button id="resetBtn" class="reset-btn"><i class="fas fa-redo"></i> Reset Application</button>
+    </main>
+
     <script src="script.js"></script>
+
 </body>
 </html>
