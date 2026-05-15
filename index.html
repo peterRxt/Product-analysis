@@ -1,111 +1,796 @@
+Here is an HTML document that adds manual invoice sales input functionality to the existing Section Sales Analyzer, integrating these values into the Retail section.
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product Analysis App</title>
-    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Section Sales Analyzer | BC + Sales Match + Manual Invoice Entry (Retail)</title>
+    <!-- Bootstrap 5 + Icons + Fonts -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- SheetJS (XLSX) core library -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <!-- html2canvas for PNG export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            background: #f0f2f5;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto;
+        }
+        .card-glass {
+            background: white;
+            border-radius: 1.75rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.05), 0 2px 4px rgba(0,0,0,0.02);
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+        .upload-zone {
+            background: #fafcff;
+            border: 2px dashed #cbd5e1;
+            border-radius: 1.25rem;
+            padding: 1.4rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .upload-zone:hover {
+            background: #f8fafd;
+            border-color: #94a3b8;
+        }
+        .kpi-master-wrapper {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .kpi-master-card {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-radius: 1.5rem;
+            color: white;
+            padding: 1.2rem 2rem;
+            box-shadow: 0 12px 20px -12px rgba(0,0,0,0.2);
+            min-width: 240px;
+            width: auto;
+            flex: 0 0 auto;
+        }
+        .kpi-master-card.secondary {
+            background: linear-gradient(135deg, #2d3a5e 0%, #1e2a44 100%);
+        }
+        .total-number {
+            font-size: 2.2rem;
+            font-weight: 800;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+        }
+        .sections-stack-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
+        }
+        .section-card-expanded {
+            background: white;
+            border-radius: 1.25rem;
+            padding: 1rem 1rem 1rem 1.2rem;
+            transition: all 0.2s ease;
+            border-left: 6px solid;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .section-card-expanded:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 16px 24px -12px rgba(0,0,0,0.12);
+        }
+        .section-name-header {
+            font-weight: 800;
+            font-size: 1.2rem;
+            letter-spacing: -0.2px;
+        }
+        .sales-value-lg {
+            font-size: 1.9rem;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.1;
+        }
+        .customer-badge {
+            background: #eef2ff;
+            border-radius: 40px;
+            padding: 0.25rem 0.9rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #1e40af;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .top3-item {
+            background: #f8fafc;
+            border-radius: 14px;
+            padding: 0.45rem 0.65rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.75rem;
+        }
+        .top3-item strong {
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .progress-thin {
+            height: 6px;
+            border-radius: 6px;
+        }
+        .btn-export {
+            background: #0f172a;
+            border-radius: 40px;
+            padding: 0.5rem 1.5rem;
+            font-weight: 600;
+            transition: 0.2s;
+            color: white;
+            border: none;
+        }
+        .btn-export-excel {
+            background: #1e6f3f;
+            border-radius: 40px;
+            padding: 0.5rem 1.5rem;
+            font-weight: 600;
+            transition: 0.2s;
+            color: white;
+            border: none;
+        }
+        .btn-export-excel:hover {
+            background: #0f5a33;
+            transform: scale(1.02);
+        }
+        .btn-process {
+            background: #0f172a;
+            border-radius: 40px;
+            padding: 0.65rem 2rem;
+            font-weight: 600;
+        }
+        .table-custom th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+        }
+        .footer-note {
+            font-size: 0.7rem;
+            color: #475569;
+        }
+        .description-text {
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #1f2937;
+            line-height: 1.3;
+            word-break: break-word;
+        }
+        .manual-invoice-card {
+            background: #fefce8;
+            border: 1px solid #fde047;
+            border-radius: 1.25rem;
+        }
+        @media (max-width: 768px) {
+            .sections-stack-grid {
+                grid-template-columns: 1fr;
+            }
+            .kpi-master-wrapper {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
 </head>
 <body>
 
-    <header>
-        <h1>Product Sales Analyzer</h1>
-        <button id="homeBtn">Home</button>
-    </header>
+<div class="container py-4 py-lg-5" id="dashboardRoot">
+    <!-- Header -->
+    <div class="text-center mb-4">
+        <h1 class="display-5 fw-bold" style="color: #0f172a;"><i class="fas fa-chalkboard-user me-2"></i>Section Sales Intelligence</h1>
+        <p class="text-secondary">Upload BC Master & Sales File → Auto-classify into Liquor, Deli/Bakery, Wholesale, Pharmacy, Retail + Optional Manual Invoice Sales (Retail)</p>
+    </div>
 
-    <main>
-        <section class="card upload-section">
-            <h2>1. Upload Data</h2>
-            <input type="file" id="fileInput" accept=".xlsx, .xls" multiple>
-            <p id="fileInfo">No file selected</p>
-        </section>
-
-        <section class="card column-mapping" id="columnMapping" style="display: none;">
-            <h2>2. Map Columns</h2>
-            <div id="mappingFields">
+    <!-- Double Upload Row -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <div class="card-glass p-3 h-100">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <i class="fas fa-cubes fs-4 text-success"></i>
+                    <h5 class="mb-0 fw-semibold">BC Master File</h5>
                 </div>
-            <button id="confirmMappingBtn">Confirm Mapping</button>
-        </section>
-
-        <section class="card analysis-section">
-            <h2>3. Run Analysis</h2>
-            <div class="input-group">
-                <label for="analysisType">Analysis Type:</label>
-                <select id="analysisType">
-                    <option value="">-- Select Analysis --</option>
-                    <option value="fastMoving">Fast-Moving Products</option>
-                    <option value="slowMoving">Slow-Moving Products</option>
-                    <option value="contribution">Sales Contribution</option>
-                    <option value="profitability">Profitability Analysis</option>
-                </select>
-            </div>
-            <div id="analysisParams">
+                <p class="small text-secondary">Columns: No., Description, Inventory Posting Group1, ...</p>
+                <div id="bcUploadZone" class="upload-zone" onclick="document.getElementById('bcInput').click()">
+                    <i class="fas fa-cloud-upload-alt fa-2x mb-2 text-secondary"></i>
+                    <p class="mb-1"><strong>Click to upload BC Excel</strong></p>
+                    <p id="bcFileName" class="small text-success fw-semibold mb-0">No file chosen</p>
                 </div>
-            <button id="runAnalysisBtn">Run Analysis</button>
-        </section>
-
-        <section class="card visualization-section">
-            <h2>4. Visualize & Export</h2>
-            <div class="tab-buttons">
-                <button class="tab-btn active" data-tab="tableResults">Table Results</button>
-                <button class="tab-btn" data-tab="chartResults">Chart Visualization</button>
+                <input type="file" id="bcInput" accept=".xlsx, .xls, .xlsb, .csv" style="display:none" />
             </div>
-
-            <div id="tableResults" class="results-section active">
-                <h3>Analysis Report</h3>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Product</th>
-                                <th>Quantity</th>
-                                <th>Total Sales</th>
-                                <th>Avg. Unit Price</th>
-                                <th>Avg. Unit Cost</th>
-                                <th>Profit / Contribution</th>
-                            </tr>
-                        </thead>
-                        <tbody id="resultsTable">
-                            </tbody>
-                    </table>
+        </div>
+        <div class="col-md-6">
+            <div class="card-glass p-3 h-100">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <i class="fas fa-receipt fs-4 text-primary"></i>
+                    <h5 class="mb-0 fw-semibold">Sales Transaction File (POS)</h5>
                 </div>
-                <div class="export-actions">
-                    <button id="exportBtn" class="export-btn"><i class="fas fa-file-excel"></i> Export Excel</button>
-                    </div>
+                <p class="small text-secondary">Columns: item_no, amount, invoice_no, qty, price, ...</p>
+                <div id="salesUploadZone" class="upload-zone" onclick="document.getElementById('salesInput').click()">
+                    <i class="fas fa-cloud-upload-alt fa-2x mb-2 text-secondary"></i>
+                    <p class="mb-1"><strong>Click to upload Sales Excel</strong></p>
+                    <p id="salesFileName" class="small text-success fw-semibold mb-0">No file chosen</p>
+                </div>
+                <input type="file" id="salesInput" accept=".xlsx, .xls, .xlsb, .csv" style="display:none" />
             </div>
+        </div>
+    </div>
 
-            <div id="chartResults" class="results-section">
-                <h3>Chart Visualization</h3>
+    <!-- Manual Invoice Sales Entry (Optional Retail Inject) -->
+    <div class="card-glass manual-invoice-card p-4 mb-4">
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <i class="fas fa-file-invoice-dollar fs-4 text-warning"></i>
+            <h5 class="mb-0 fw-semibold">➕ Manual Invoice Sales (Optional – Retail Section)</h5>
+            <span class="badge bg-secondary ms-2">Extra non-POS sales</span>
+        </div>
+        <p class="small text-secondary mb-3">If you have invoice-based sales not captured by POS, enter total amount and number of unique customers. These figures will be <strong>added to RETAIL section</strong> and reflected in total KPIs, section cards, and all exports.</p>
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label fw-semibold small">Invoice Sales Total Amount ($)</label>
                 <div class="input-group">
-                    <label for="chartType">Chart Type:</label>
-                    <select id="chartType">
-                        <option value="">-- Select Chart Type --</option>
-                        <option value="bar">Bar Chart</option>
-                        <option value="pie">Pie Chart</option>
-                        <option value="doughnut">Doughnut Chart</option>
-                    </select>
-                    <button id="generateChartBtn">Generate Chart</button>
+                    <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                    <input type="number" step="0.01" id="manualAmount" class="form-control" placeholder="e.g., 12500.00" value="0">
                 </div>
-                <div class="chart-container">
-                    <canvas id="chartCanvas"></canvas>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold small">Number of Unique Customers (Invoices)</label>
+                <input type="number" step="1" id="manualCustomers" class="form-control" placeholder="e.g., 42" value="0">
+            </div>
+            <div class="col-md-3">
+                <button id="clearManualBtn" class="btn btn-outline-secondary w-100" type="button"><i class="fas fa-eraser"></i> Clear Values</button>
+            </div>
+        </div>
+        <div class="form-text mt-2"><i class="fas fa-info-circle"></i> Leave both zero or empty to ignore. When processing, these values are added directly to RETAIL sales & customer counts.</div>
+    </div>
+
+    <!-- Process + Export Row -->
+    <div class="d-flex justify-content-center gap-3 mb-4 flex-wrap">
+        <button id="processBtn" class="btn btn-process btn-primary-custom px-5 py-2 shadow-sm text-white" disabled>
+            <i class="fas fa-merge me-2"></i> Merge & Analyze Sections
+        </button>
+        <button id="exportPngBtn" class="btn btn-export px-4 py-2 shadow-sm" disabled>
+            <i class="fas fa-camera me-2"></i> Export KPIs to PNG (HD)
+        </button>
+        <button id="exportSectionExcelBtn" class="btn btn-export-excel px-4 py-2 shadow-sm" disabled>
+            <i class="fas fa-file-excel me-2"></i> Export Sales by Section (Excel)
+        </button>
+    </div>
+    <div id="statusMsg" class="alert alert-secondary text-center d-none" role="alert"></div>
+
+    <!-- MAIN DASHBOARD (hidden until process) -->
+    <div id="kpiContainer" style="display: none;">
+        <!-- Master KPIs -->
+        <div class="kpi-master-wrapper mb-4">
+            <div class="kpi-master-card d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-white-50 text-uppercase small fw-semibold">Total Sales (all sections + manual invoice)</span>
+                    <div class="total-number" id="totalSalesAmount">0</div>
                 </div>
-                <div class="chart-actions">
-                    <button id="exportChartBtn" class="export-btn"><i class="fas fa-image"></i> Export Chart (PNG)</button>
+                <i class="fas fa-chart-line fa-2x text-white-50 opacity-75"></i>
+            </div>
+            <div class="kpi-master-card secondary d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-white-50 small fw-semibold">Total Unique Customers</span>
+                    <div class="total-number" id="totalCustomersCount">0</div>
+                    <small class="text-white-50">POS invoices + manual customers (retail)</small>
+                </div>
+                <i class="fas fa-users fa-2x text-white-50 opacity-75"></i>
+            </div>
+        </div>
+
+        <!-- Sections Cards -->
+        <div class="card-glass p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+                <div><i class="fas fa-chart-pie fs-5 me-2"></i><h4 class="mb-0 fw-semibold d-inline-block">Sales Performance by Section</h4></div>
+                <span class="badge bg-light text-dark">Top 3 selling items (by Qty) with product description</span>
+            </div>
+            <div id="sectionCardsGrid" class="sections-stack-grid"></div>
+            <div class="mt-3 small text-muted fst-italic" id="manualNoteInline" style="display: none;">* Manual invoice sales added to Retail section</div>
+        </div>
+
+        <!-- Customers per section table -->
+        <div class="card-glass p-4 mb-4">
+            <h5 class="mb-3"><i class="fas fa-user-group me-2"></i>Customers Served per Section</h5>
+            <p class="small text-secondary">Unique invoice count (invoice_no) per section — each unique invoice represents a distinct customer transaction. Manual invoices are added as extra customers to Retail.</p>
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle table-custom" id="customerTable">
+                    <thead><tr><th>Section</th><th>Unique Customers (Invoices)</th><th>% of Total Customers</th><th>Share of Sales Volume</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Preview Matched Sales -->
+        <div class="card-glass p-4">
+            <h5 class="mb-2"><i class="fas fa-table-list me-2"></i>Matched Sales Preview (Top 12)</h5>
+            <p class="small text-secondary">Showing classified transactions: item_no, assigned section, amount, invoice (POS data only). Manual invoice entries appear aggregated in totals.</p>
+            <div class="table-responsive" style="max-height: 360px; overflow-y: auto;">
+                <table class="table table-sm table-hover align-middle" id="previewTable">
+                    <thead class="table-light"><tr><th>Item No.</th><th>Section</th><th>Amount</th><th>Invoice No</th><th>Qty</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="footer-note mt-2"><i class="fas fa-info-circle"></i> Classification based on BC columns: Inventory Posting Group1 & Description patterns. Manual invoice sales are merged into Retail totals.</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Global data
+    let bcData = null;
+    let salesData = null;
+    let currentAnalysis = null;
+    let rawSectionTransactions = null;   // store full transaction lists per section for Excel export
+    let itemDescriptionMap = new Map();
+
+    function readExcelFile(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonRows = XLSX.utils.sheet_to_json(firstSheet);
+                resolve(jsonRows);
+            };
+            reader.onerror = (err) => reject(err);
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    function getField(obj, possibleNames) {
+        if (!obj) return undefined;
+        for (let name of possibleNames) {
+            const key = Object.keys(obj).find(k => k.toLowerCase() === name.toLowerCase());
+            if (key) return obj[key];
+        }
+        return undefined;
+    }
+
+    function classifyBCRecord(row) {
+        const invPostGroup1 = getField(row, ['Inventory Posting Group1', 'inventory posting group1', 'InventoryPostingGroup1', 'InvPostingGroup1']);
+        const description = getField(row, ['Description', 'description']) || '';
+        const descUpper = String(description).toUpperCase();
+        if (invPostGroup1 && String(invPostGroup1).toUpperCase().includes('WINES & SPIRITS')) {
+            return { sectionKey: 'A', sectionName: 'LIQUOR' };
+        }
+        if (descUpper.startsWith('XANALIFE') && invPostGroup1 && String(invPostGroup1).toUpperCase().includes('FOODSTUFFS')) {
+            return { sectionKey: 'B', sectionName: 'DELI/BAKERY' };
+        }
+        const wholesaleKeywords = ['BOX', 'OUTER', 'BALE'];
+        if (wholesaleKeywords.some(kw => descUpper.includes(kw))) {
+            return { sectionKey: 'C', sectionName: 'WHOLESALE' };
+        }
+        if (invPostGroup1) {
+            const invUpper = String(invPostGroup1).toUpperCase();
+            const pharmacyKeywords = ['CHRONIC', 'CONTROLLED', 'COSMETICS & BEAUTY P', 'COSMETICS & BEAUTY', 'GENERAL', 'OVER THE COUNTER', 'SUPPLEMENT'];
+            if (pharmacyKeywords.some(kw => invUpper.includes(kw))) {
+                return { sectionKey: 'D', sectionName: 'PHARMACY' };
+            }
+        }
+        return { sectionKey: 'E', sectionName: 'RETAIL' };
+    }
+
+    // Build mapping: itemNo -> { section, description }
+    function buildItemMetadataMap(bcRows) {
+        const map = new Map();
+        for (const row of bcRows) {
+            const itemNo = getField(row, ['No.', 'No', 'ITEM_NO', 'item_no', 'Number', 'Item No']);
+            if (!itemNo) continue;
+            const description = getField(row, ['Description', 'description']) || '';
+            const descText = description ? String(description).trim() : '';
+            const { sectionKey, sectionName } = classifyBCRecord(row);
+            map.set(String(itemNo).trim(), { sectionKey, sectionName, description: descText });
+        }
+        return map;
+    }
+
+    // Sanitize sheet name: remove/replace invalid characters for Excel worksheet names
+    function sanitizeSheetName(name) {
+        let sanitized = name.replace(/[\\/*?:\[\]]/g, '');
+        sanitized = sanitized.trim();
+        if (sanitized.length === 0) sanitized = "Sheet";
+        if (sanitized.length > 31) sanitized = sanitized.substring(0, 31);
+        return sanitized;
+    }
+
+    function performMerge(bcRows, salesRows, manualAmount, manualCustomers) {
+        const itemMetadata = buildItemMetadataMap(bcRows);
+        itemDescriptionMap.clear();
+        for (let [item, meta] of itemMetadata.entries()) {
+            itemDescriptionMap.set(item, meta.description || item);
+        }
+
+        // Initialize section structures including raw transactions list
+        const sectionDetails = {
+            'A': { name: 'LIQUOR', totalSales: 0, customers: new Set(), itemsMap: new Map(), transactions: [] },
+            'B': { name: 'DELI/BAKERY', totalSales: 0, customers: new Set(), itemsMap: new Map(), transactions: [] },
+            'C': { name: 'WHOLESALE', totalSales: 0, customers: new Set(), itemsMap: new Map(), transactions: [] },
+            'D': { name: 'PHARMACY', totalSales: 0, customers: new Set(), itemsMap: new Map(), transactions: [] },
+            'E': { name: 'RETAIL', totalSales: 0, customers: new Set(), itemsMap: new Map(), transactions: [] }
+        };
+        const previewMatches = [];
+
+        for (const sale of salesRows) {
+            let itemNoRaw = getField(sale, ['item_no', 'item_code', 'Item No', 'Item_No', 'item number', 'item']);
+            if (!itemNoRaw) continue;
+            const itemNoStr = String(itemNoRaw).trim();
+            let amountVal = getField(sale, ['amount', 'Amount', 'total', 'price_total', 'sales_amount']);
+            if (amountVal === undefined) amountVal = 0;
+            let amountNum = parseFloat(String(amountVal).replace(/[^0-9.-]/g, ''));
+            if (isNaN(amountNum)) amountNum = 0;
+            let invoiceNo = getField(sale, ['invoice_no', 'Invoice No', 'invoice_number', 'InvoiceNumber', 'invoice']);
+            const invoiceStr = (invoiceNo !== undefined && invoiceNo !== null) ? String(invoiceNo).trim() : `unknown_${Date.now()}_${Math.random()}`;
+            let qtyVal = getField(sale, ['qty', 'quantity', 'Qty', 'Quantity']);
+            if (qtyVal === undefined || qtyVal === null) qtyVal = 1;
+            let qtyNum = parseFloat(String(qtyVal).replace(/[^0-9.-]/g, ''));
+            if (isNaN(qtyNum)) qtyNum = 1;
+
+            let meta = itemMetadata.get(itemNoStr);
+            let sectionKey = 'E';
+            let sectionName = 'RETAIL';
+            let itemDescription = itemNoStr;
+            if (meta) {
+                sectionKey = meta.sectionKey;
+                sectionName = meta.sectionName;
+                itemDescription = meta.description || itemNoStr;
+            } else {
+                sectionKey = 'E';
+                sectionName = 'RETAIL';
+                itemDescription = itemNoStr;
+            }
+
+            const target = sectionDetails[sectionKey];
+            if (target) {
+                target.totalSales += amountNum;
+                target.customers.add(invoiceStr);
+                target.transactions.push({
+                    item_no: itemNoStr,
+                    description: itemDescription,
+                    amount: amountNum,
+                    invoice_no: invoiceStr,
+                    qty: qtyNum
+                });
+                if (!target.itemsMap.has(itemNoStr)) {
+                    target.itemsMap.set(itemNoStr, { qtyTotal: 0, amountTotal: 0, description: itemDescription });
+                }
+                const itemData = target.itemsMap.get(itemNoStr);
+                itemData.qtyTotal += qtyNum;
+                itemData.amountTotal += amountNum;
+                if (itemData.description === itemNoStr && itemDescription !== itemNoStr) itemData.description = itemDescription;
+            } else {
+                sectionDetails['E'].totalSales += amountNum;
+                sectionDetails['E'].customers.add(invoiceStr);
+                sectionDetails['E'].transactions.push({
+                    item_no: itemNoStr,
+                    description: itemDescription,
+                    amount: amountNum,
+                    invoice_no: invoiceStr,
+                    qty: qtyNum
+                });
+                if (!sectionDetails['E'].itemsMap.has(itemNoStr)) {
+                    sectionDetails['E'].itemsMap.set(itemNoStr, { qtyTotal: 0, amountTotal: 0, description: itemDescription });
+                }
+                const itemData = sectionDetails['E'].itemsMap.get(itemNoStr);
+                itemData.qtyTotal += qtyNum;
+                itemData.amountTotal += amountNum;
+                if (itemData.description === itemNoStr && itemDescription !== itemNoStr) itemData.description = itemDescription;
+            }
+
+            previewMatches.push({
+                item_no: itemNoStr,
+                section: sectionName,
+                amount: amountNum,
+                invoice_no: invoiceStr,
+                qty: qtyNum
+            });
+        }
+
+        // === MANUAL INVOICE INTEGRATION: Add to RETAIL section (E) ===
+        const manualSalesAmount = (typeof manualAmount === 'number' && !isNaN(manualAmount) && manualAmount > 0) ? manualAmount : 0;
+        const manualCustCount = (typeof manualCustomers === 'number' && !isNaN(manualCustomers) && manualCustomers > 0) ? manualCustomers : 0;
+        let manualApplied = false;
+        if (manualSalesAmount > 0 || manualCustCount > 0) {
+            // Add sales amount to RETAIL totalSales
+            sectionDetails['E'].totalSales += manualSalesAmount;
+            // For customers: we generate dummy invoice placeholders to maintain uniqueness but count them separately.
+            // We'll add manual customers as distinct "manual_invoice_X" entries to the Set to reflect unique customers.
+            for (let i = 0; i < manualCustCount; i++) {
+                sectionDetails['E'].customers.add(`manual_invoice_${Date.now()}_${i}`);
+            }
+            // Also push a special summary transaction for transparency in raw data export? add a record to transactions to show manual injection
+            if (manualSalesAmount > 0) {
+                sectionDetails['E'].transactions.push({
+                    item_no: "MANUAL_INVOICE",
+                    description: "Manual Invoice Sales (Non-POS)",
+                    amount: manualSalesAmount,
+                    invoice_no: `manual_batch_${Date.now()}`,
+                    qty: manualCustCount > 0 ? manualCustCount : 1
+                });
+            }
+            manualApplied = true;
+        }
+
+        // Build top3 per section (based on aggregated itemsMap)
+        const sectionTop3 = {};
+        for (let [key, data] of Object.entries(sectionDetails)) {
+            const itemsArray = Array.from(data.itemsMap.entries()).map(([itemId, agg]) => ({
+                itemNo: itemId,
+                totalQty: agg.qtyTotal,
+                totalAmount: agg.amountTotal,
+                description: agg.description || itemId
+            }));
+            itemsArray.sort((a,b) => b.totalQty - a.totalQty);
+            sectionTop3[key] = itemsArray.slice(0,3);
+        }
+
+        let totalSalesOverall = 0;
+        let totalUniqueCustomersOverallSet = new Set();
+        for (let data of Object.values(sectionDetails)) {
+            totalSalesOverall += data.totalSales;
+            data.customers.forEach(c => totalUniqueCustomersOverallSet.add(c));
+        }
+
+        const summarySections = [];
+        for (let [key, data] of Object.entries(sectionDetails)) {
+            const salesPerc = totalSalesOverall > 0 ? (data.totalSales / totalSalesOverall) * 100 : 0;
+            const custCount = data.customers.size;
+            summarySections.push({
+                sectionKey: key,
+                sectionName: data.name,
+                totalSales: data.totalSales,
+                customerCount: custCount,
+                salesPercentage: salesPerc,
+                customerPercentage: totalUniqueCustomersOverallSet.size > 0 ? (custCount / totalUniqueCustomersOverallSet.size) * 100 : 0,
+                top3Items: sectionTop3[key] || [],
+                manualAppliedFlag: (key === 'E' && manualApplied)
+            });
+        }
+        const orderMap = { 'A':0, 'B':1, 'C':2, 'D':3, 'E':4 };
+        summarySections.sort((a,b) => orderMap[a.sectionKey] - orderMap[b.sectionKey]);
+        const previewTop = previewMatches.slice(0, 12);
+        
+        // Store raw transactions for Excel export (including manual injection records)
+        rawSectionTransactions = {};
+        for (let [key, data] of Object.entries(sectionDetails)) {
+            rawSectionTransactions[data.name] = data.transactions;
+        }
+        
+        return {
+            summarySections,
+            totalSalesOverall,
+            totalUniqueCustomers: totalUniqueCustomersOverallSet.size,
+            previewTop,
+            manualApplied
+        };
+    }
+
+    function truncateDesc(desc, maxLen = 38) {
+        if (!desc) return '';
+        if (desc.length <= maxLen) return desc;
+        return desc.substring(0, maxLen-3) + '...';
+    }
+
+    function renderDashboard(analysis) {
+        currentAnalysis = analysis;
+        const { summarySections, totalSalesOverall, totalUniqueCustomers, previewTop, manualApplied } = analysis;
+        document.getElementById('totalSalesAmount').innerText = totalSalesOverall.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('totalCustomersCount').innerText = totalUniqueCustomers.toLocaleString();
+        if (manualApplied) {
+            document.getElementById('manualNoteInline').style.display = 'block';
+        } else {
+            document.getElementById('manualNoteInline').style.display = 'none';
+        }
+
+        const gridContainer = document.getElementById('sectionCardsGrid');
+        gridContainer.innerHTML = '';
+        const colorConfig = {
+            'A': { borderColor: '#c44536', bgLight: '#fff3f0', icon: 'fas fa-wine-bottle' },
+            'B': { borderColor: '#3a7b4b', bgLight: '#eef6ef', icon: 'fas fa-bread-slice' },
+            'C': { borderColor: '#e67e22', bgLight: '#fff4e6', icon: 'fas fa-boxes' },
+            'D': { borderColor: '#8e44ad', bgLight: '#f5edf9', icon: 'fas fa-capsules' },
+            'E': { borderColor: '#3498db', bgLight: '#eef5fc', icon: 'fas fa-store' }
+        };
+
+        summarySections.forEach(sec => {
+            const config = colorConfig[sec.sectionKey] || colorConfig['E'];
+            const top3 = sec.top3Items || [];
+            const top3Html = top3.map((item, idx) => {
+                const displayDesc = item.description && item.description !== item.itemNo ? item.description : `Item: ${item.itemNo}`;
+                const shortDesc = truncateDesc(displayDesc, 45);
+                return `
+                    <div class="top3-item d-flex justify-content-between align-items-start gap-2 flex-wrap">
+                        <div style="flex:2; min-width: 120px;">
+                            <div class="fw-bold" style="font-size:0.72rem;">${idx+1}. <span class="description-text" title="${escapeHtml(displayDesc)}">${escapeHtml(shortDesc)}</span></div>
+                        </div>
+                        <div class="text-nowrap"><span class="badge bg-secondary bg-opacity-25 text-dark">Qty: ${item.totalQty.toLocaleString()}</span></div>
+                        <div class="fw-semibold text-nowrap">${item.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                     </div>
-            </div>
-        </section>
+                `;
+            }).join('');
+            const manualBadge = (sec.sectionKey === 'E' && sec.manualAppliedFlag) ? '<span class="badge bg-warning text-dark ms-2"><i class="fas fa-file-invoice"></i> +Manual</span>' : '';
+            const card = document.createElement('div');
+            card.className = 'section-card-expanded';
+            card.style.borderLeftColor = config.borderColor;
+            card.style.backgroundColor = config.bgLight;
+            card.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap">
+                    <div class="section-name-header"><i class="${config.icon} me-2"></i>${sec.sectionName}${manualBadge}</div>
+                    <div class="customer-badge"><i class="fas fa-user-check me-1"></i> ${sec.customerCount.toLocaleString()} customers</div>
+                </div>
+                <div class="sales-value-lg mt-1">${sec.totalSales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                <div class="d-flex justify-content-between mt-1 mb-2">
+                    <small class="text-secondary">${sec.salesPercentage.toFixed(1)}% of total sales</small>
+                    <small class="text-secondary"><i class="fas fa-percent"></i> ${sec.customerPercentage.toFixed(1)}% of customers</small>
+                </div>
+                <div class="progress progress-thin mt-1 mb-3">
+                    <div class="progress-bar" style="width: ${sec.salesPercentage}%; background-color: ${config.borderColor};"></div>
+                </div>
+                <div class="mt-1">
+                    <span class="fw-semibold small"><i class="fas fa-crown me-1"></i>Top 3 by Qty (with description)</span>
+                    <div class="mt-1">${top3Html || '<div class="small text-muted">No sales data</div>'}</div>
+                </div>
+            `;
+            gridContainer.appendChild(card);
+        });
 
-        <div id="messageArea" class="message-area" style="display: none;">
-            </div>
+        const customerTableBody = document.querySelector('#customerTable tbody');
+        customerTableBody.innerHTML = '';
+        summarySections.forEach(sec => {
+            const customerShare = totalUniqueCustomers > 0 ? ((sec.customerCount / totalUniqueCustomers) * 100).toFixed(1) : '0.0';
+            const salesShare = totalSalesOverall > 0 ? ((sec.totalSales / totalSalesOverall) * 100).toFixed(1) : '0.0';
+            customerTableBody.insertAdjacentHTML('beforeend', `
+                <tr>
+                    <td class="fw-semibold"><i class="fas fa-tag me-1"></i> ${sec.sectionName}</td>
+                    <td><span class="badge bg-secondary bg-opacity-10 text-dark p-2">${sec.customerCount.toLocaleString()} unique invoices</span></td>
+                    <td>${customerShare}%</td>
+                    <td>${salesShare}% of total value</td>
+                </tr>
+            `);
+        });
 
-        <button id="resetBtn" class="reset-btn"><i class="fas fa-redo"></i> Reset Application</button>
-    </main>
+        const previewBody = document.querySelector('#previewTable tbody');
+        previewBody.innerHTML = '';
+        if (previewTop.length === 0) previewBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No matched sales records</td></tr>';
+        else {
+            previewTop.forEach(p => {
+                previewBody.innerHTML += `<tr>
+                    <td><code>${escapeHtml(p.item_no)}</code></td>
+                    <td><span class="badge rounded-pill bg-dark">${p.section}</span></td>
+                    <td>${p.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></td>
+                    <td>${escapeHtml(p.invoice_no)}</span></td>
+                    <td>${p.qty}</span></td>
+                </tr>`;
+            });
+        }
+        document.getElementById('kpiContainer').style.display = 'block';
+        document.getElementById('exportPngBtn').disabled = false;
+        document.getElementById('exportSectionExcelBtn').disabled = false;
+    }
 
-    <script src="script.js"></script>
+    function exportSectionsToExcel() {
+        if (!rawSectionTransactions) {
+            alert('No section data available. Please run analysis first.');
+            return;
+        }
+        try {
+            const workbook = XLSX.utils.book_new();
+            const sectionNames = ['LIQUOR', 'DELI/BAKERY', 'WHOLESALE', 'PHARMACY', 'RETAIL'];
+            for (let sectionName of sectionNames) {
+                const transactions = rawSectionTransactions[sectionName] || [];
+                let sanitizedName = sanitizeSheetName(sectionName);
+                if (transactions.length === 0) {
+                    const emptyData = [{ "Note": "No sales transactions for this section." }];
+                    const worksheet = XLSX.utils.json_to_sheet(emptyData);
+                    XLSX.utils.book_append_sheet(workbook, worksheet, sanitizedName);
+                    continue;
+                }
+                const exportData = transactions.map(t => ({
+                    "Item No.": t.item_no,
+                    "Product Description": t.description,
+                    "Quantity": t.qty,
+                    "Amount": t.amount,
+                    "Invoice No.": t.invoice_no
+                }));
+                const worksheet = XLSX.utils.json_to_sheet(exportData);
+                worksheet['!cols'] = [{wch:15}, {wch:45}, {wch:12}, {wch:15}, {wch:20}];
+                XLSX.utils.book_append_sheet(workbook, worksheet, sanitizedName);
+            }
+            if (currentAnalysis && currentAnalysis.summarySections) {
+                const summaryData = currentAnalysis.summarySections.map(sec => ({
+                    "Section": sec.sectionName,
+                    "Total Sales": sec.totalSales,
+                    "Unique Customers": sec.customerCount,
+                    "% of Total Sales": sec.salesPercentage.toFixed(2) + '%',
+                    "% of Customers": sec.customerPercentage.toFixed(2) + '%'
+                }));
+                const summarySheet = XLSX.utils.json_to_sheet(summaryData);
+                XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary_KPIs");
+            }
+            const timestamp = new Date().toISOString().slice(0,19).replace(/:/g, '-');
+            XLSX.writeFile(workbook, `sales_by_section_${timestamp}.xlsx`);
+            showStatus('Excel file exported with manual invoice data (if any) included in Retail', 'success');
+        } catch (error) {
+            showStatus('Export failed: ' + error.message, 'danger');
+        }
+    }
 
+    function escapeHtml(str) { return String(str).replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+
+    async function exportToPNG() {
+        const container = document.getElementById('kpiContainer');
+        if (!container) return;
+        const btn = document.getElementById('exportPngBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-pulse me-2"></i> Generating HD Image...';
+        btn.disabled = true;
+        try {
+            const canvas = await html2canvas(container, { scale: 3, backgroundColor: '#f0f2f5', logging: false });
+            const link = document.createElement('a');
+            link.download = 'sales_section_kpis.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        } catch (err) { alert('Export failed: ' + err.message); } 
+        finally { btn.innerHTML = originalText; btn.disabled = false; }
+    }
+
+    let bcUploadedFlag = false, salesUploadedFlag = false;
+    function updateProcessButton() {
+        const btn = document.getElementById('processBtn');
+        if (bcUploadedFlag && salesUploadedFlag && bcData && salesData) btn.disabled = false;
+        else btn.disabled = true;
+    }
+    function showStatus(msg, type) {
+        const statusDiv = document.getElementById('statusMsg');
+        statusDiv.className = `alert alert-${type} text-center`;
+        statusDiv.innerHTML = `<i class="fas fa-info-circle me-1"></i> ${msg}`;
+        statusDiv.classList.remove('d-none');
+        setTimeout(() => statusDiv.classList.add('d-none'), 3500);
+    }
+
+    document.getElementById('bcInput').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        document.getElementById('bcFileName').innerText = file.name;
+        try { bcData = await readExcelFile(file); bcUploadedFlag = true; showStatus('BC Master loaded', 'success'); } 
+        catch (err) { bcData = null; bcUploadedFlag = false; showStatus('BC error', 'danger'); } 
+        finally { updateProcessButton(); }
+    });
+    document.getElementById('salesInput').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        document.getElementById('salesFileName').innerText = file.name;
+        try { salesData = await readExcelFile(file); salesUploadedFlag = true; showStatus('Sales loaded', 'success'); } 
+        catch (err) { salesData = null; salesUploadedFlag = false; showStatus('Sales error', 'danger'); } 
+        finally { updateProcessButton(); }
+    });
+    document.getElementById('processBtn').addEventListener('click', () => {
+        if (!bcData || !salesData) { showStatus('Upload both files', 'warning'); return; }
+        const manualAmount = parseFloat(document.getElementById('manualAmount').value) || 0;
+        const manualCustomers = parseInt(document.getElementById('manualCustomers').value, 10) || 0;
+        try {
+            const analysis = performMerge(bcData, salesData, manualAmount, manualCustomers);
+            renderDashboard(analysis);
+            showStatus(`Analysis complete | Total Sales: ${analysis.totalSalesOverall.toLocaleString()} | Customers: ${analysis.totalUniqueCustomers} ${analysis.manualApplied ? '(Manual invoice applied to Retail)' : ''}`, 'info');
+        } catch (err) { showStatus('Merge error: ' + err.message, 'danger'); }
+    });
+    document.getElementById('clearManualBtn').addEventListener('click', () => {
+        document.getElementById('manualAmount').value = '';
+        document.getElementById('manualCustomers').value = '';
+        showStatus('Manual invoice values cleared', 'secondary');
+    });
+    document.getElementById('exportPngBtn').addEventListener('click', exportToPNG);
+    document.getElementById('exportSectionExcelBtn').addEventListener('click', exportSectionsToExcel);
+</script>
 </body>
 </html>
+```
