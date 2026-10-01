@@ -2,696 +2,1307 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Sales Categorizer Pro | Wholesale, Pharmacy, Liquor, Deli, Retail + Manual Sales</title>
-    <!-- Bootstrap 5 + Icons + Custom Font -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Monitor · IPG Daily & Trends</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <!-- SheetJS (XLSX) for parsing Excel files -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
-        * {
-            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-        }
-        body {
-            background: #f4f7fc;
-            padding-bottom: 2rem;
-        }
-        .gradient-header {
-            background: linear-gradient(135deg, #0B2B40 0%, #1A4A5F 100%);
-            color: white;
-            border-radius: 0 0 2rem 2rem;
-            padding: 1.8rem 1rem;
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
-        }
-        .card-glass {
-            background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(2px);
-            border: none;
-            border-radius: 1.5rem;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
-            transition: transform 0.2s;
-        }
-        .card-glass:hover {
-            transform: translateY(-3px);
-        }
-        .upload-zone {
-            border: 2px dashed #cbd5e1;
-            border-radius: 1.5rem;
-            background: #fefefe;
-            transition: all 0.2s;
-            cursor: pointer;
-        }
-        .upload-zone:hover {
-            background-color: #f1f5f9;
-            border-color: #1A4A5F;
-        }
-        .kpi-card {
-            border-radius: 1.5rem;
-            padding: 1rem 1.2rem;
-            background: white;
-            border-left: 6px solid;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-            transition: all 0.2s;
-        }
-        .kpi-title {
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 600;
-            color: #4b5563;
-        }
-        .kpi-value {
-            font-size: 2rem;
-            font-weight: 800;
-            color: #0f172a;
-            line-height: 1.2;
-        }
-        .badge-section {
-            background: #eef2ff;
-            color: #1e3a8a;
-            font-weight: 600;
-        }
-        footer {
-            font-size: 0.75rem;
-            color: #6c757d;
-            text-align: center;
-            margin-top: 3rem;
-        }
-        .btn-custom-primary {
-            background: #1A4A5F;
-            border: none;
-            border-radius: 2rem;
-            padding: 0.6rem 1.5rem;
-            font-weight: 500;
-        }
-        .btn-custom-primary:hover {
-            background: #0e3a4b;
-        }
-        .date-badge {
-            background: #e9ecef;
-            border-radius: 2rem;
-            padding: 0.4rem 1rem;
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-        .manual-entry-row {
-            background: #f8fafc;
-            border-radius: 1rem;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
-        }
-        .remove-manual-btn {
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .remove-manual-btn:hover {
-            color: #dc2626;
-            transform: scale(1.1);
-        }
-        .manual-summary-badge {
-            background: #e0f2fe;
-            border-radius: 2rem;
-            padding: 0.25rem 0.75rem;
-            font-size: 0.8rem;
-        }
+        body { background: #f0f5fa; font-family: 'Segoe UI', Roboto, sans-serif; }
+        .card-glass { background: rgba(255,255,255,0.95); backdrop-filter: blur(2px); border: none; border-radius: 28px; box-shadow: 0 12px 28px rgba(0,0,0,0.08); }
+        .card-header-custom { background: transparent; border-bottom: 2px solid #dee2e6; padding: 0.9rem 1.5rem; font-weight: 700; }
+        .btn-rounded { border-radius: 60px; padding: 0.4rem 1.4rem; font-weight: 500; }
+        .upload-area { border: 2px dashed #b8d0dd; border-radius: 24px; background: #fafcff; cursor: pointer; transition: 0.15s; padding: 20px; }
+        .upload-area:hover { background: #f1f9ff; border-color: #2c7da0; }
+        .badge-ipg { background: #e9ecf0; color: #1a3b5c; font-size: 0.8rem; padding: 5px 14px; border-radius: 40px; margin: 3px 5px; cursor: pointer; border: 1px solid transparent; transition: 0.1s; }
+        .badge-ipg.active { background: #0d6efd; color: white; box-shadow: 0 3px 8px rgba(13,110,253,0.25); }
+        .badge-ipg:hover { background: #d4e0f0; }
+        .filter-group { max-height: 180px; overflow-y: auto; padding: 10px; background: #ffffffd9; border-radius: 24px; }
+        .table-scroll { max-height: 450px; overflow-y: auto; }
+        .summary-stat { background: #f8fafc; border-radius: 20px; padding: 8px 16px; }
+        .spinner-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.3); backdrop-filter: blur(3px); z-index: 1090; justify-content: center; align-items: center; }
+        .processing-text { background: white; padding: 16px 32px; border-radius: 60px; font-weight: 600; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .file-status { font-size: 0.85rem; padding: 4px 12px; border-radius: 20px; background: #e9ecef; display: inline-block; }
+        .sticky-header th { position: sticky; top: 0; background: #f8fafc; z-index: 5; }
+        .table th, .table td { vertical-align: middle; }
+        .action-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+        .total-match { font-weight: bold; }
+        .total-match.success { color: #198754; }
+        .total-match.error { color: #dc3545; }
+        .mapping-card { background: #f8fcff; border-radius: 16px; padding: 16px; margin-top: 12px; border: 1px solid #d4e2ed; }
+        .mapping-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+        .mapping-row select { border-radius: 30px; padding: 4px 12px; border: 1px solid #ced4da; background: white; }
+        .mapping-row .product-name { font-weight: 500; min-width: 180px; }
+        .mapping-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+        .unmatched-badge { background: #fff3cd; color: #856404; padding: 2px 10px; border-radius: 40px; font-size: 0.8rem; }
+        .trend-up { color: #198754; }
+        .trend-down { color: #dc3545; }
+        .trend-flat { color: #6c757d; }
+        .aggregation-stats { background: #e8f4f8; border-radius: 12px; padding: 6px 14px; font-size: 0.9rem; }
+        .prod-no-badge { background: #e7f1ff; color: #0b5ed7; border: 1px solid #b6d4fe; padding: 2px 10px; border-radius: 40px; font-size: 0.78rem; font-weight: 600; }
     </style>
 </head>
 <body>
+<div class="spinner-overlay" id="loadingOverlay"><div class="processing-text bg-white shadow"><i class="bi bi-arrow-repeat spin me-2"></i> Processing...</div></div>
+<div class="container py-4">
+    <div class="text-center mb-4"><h1 class="display-6 fw-bold" style="color:#1e4663;"><i class="bi bi-graph-up-arrow me-2"></i>Sales Monitor · IPG Daily & Trends</h1>
+        <p class="text-secondary">Daily pivot · Week-over-week · Month-over-month · Branch comparison</p>
+    </div>
 
-<div class="gradient-header mb-4">
-    <div class="container">
-        <div class="d-flex align-items-center justify-content-between flex-wrap">
-            <div>
-                <h1 class="display-6 fw-bold"><i class="bi bi-pie-chart-fill"></i> Sales Categorizer</h1>
-                <p class="mb-0 opacity-75">Wholesale · Pharmacy · Liquor · Deli/Bakery · Retail + Manual Invoice Capture</p>
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="card-glass card h-100">
+                <div class="card-header-custom"><i class="bi bi-upload me-2"></i>Data Import</div>
+                <div class="card-body p-4">
+                    <div class="mb-3">
+                        <label class="fw-semibold"><i class="bi bi-cart-check"></i> POS Sales File</label>
+                        <div class="upload-area text-center" id="salesDropZone">
+                            <i class="bi bi-file-excel fs-2 text-success"></i>
+                            <p class="mb-1 mt-2">Drag & drop or click</p>
+                            <small class="text-muted">Columns: Product, Qty, Amount, Service Point, Date</small>
+                            <input type="file" id="salesFileInput" accept=".xlsx,.xls,.csv,.xlsm" class="d-none">
+                        </div>
+                        <div id="salesFileName" class="small text-secondary mt-1"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="fw-semibold"><i class="bi bi-diagram-3"></i> BC Mapping (Description → IPG)</label>
+                        <div class="upload-area text-center" id="bcDropZone">
+                            <i class="bi bi-file-spreadsheet fs-2 text-primary"></i>
+                            <p class="mb-1 mt-2">Drag & drop or click</p>
+                            <small class="text-muted">Columns: "No.", "Description", "Inventory Posting Group"</small>
+                            <input type="file" id="bcFileInput" accept=".xlsx,.xls,.csv,.xlsm" class="d-none">
+                        </div>
+                        <div id="bcFileName" class="small text-secondary mt-1"></div>
+                    </div>
+                    <button class="btn btn-primary w-100 btn-rounded mt-2" id="processBtn" disabled><i class="bi bi-link-45deg"></i> Link & Process</button>
+                    <div class="alert alert-info mt-3 small"><i class="bi bi-info-circle"></i> Sales 'Product' ↔ BC 'Description'. The BC <strong>"No."</strong> column is carried through as the unique product key on export. Unmatched products use fuzzy fallback + manual mapping.</div>
+                </div>
             </div>
-            <div class="mt-2 mt-sm-0">
-                <i class="bi bi-file-earmark-excel fs-1"></i>
+        </div>
+        <div class="col-lg-7">
+            <div class="card-glass card h-100">
+                <div class="card-header-custom d-flex justify-content-between flex-wrap">
+                    <span><i class="bi bi-funnel"></i> Filters: IPG & Date</span>
+                    <div class="action-bar">
+                        <button class="btn btn-sm btn-outline-secondary rounded-pill" id="showAllGroupsBtn"><i class="bi bi-list-ul"></i> All IPG</button>
+                        <button class="btn btn-sm btn-outline-success rounded-pill" id="compareBranchesBtn"><i class="bi bi-arrow-left-right"></i> Branch compare</button>
+                        <button class="btn btn-sm btn-outline-info rounded-pill" id="pharmacyCompareBtn"><i class="bi bi-capsule"></i> Pharmacy compare</button>
+                    </div>
+                </div>
+                <div class="card-body p-3">
+                    <label class="fw-semibold"><i class="bi bi-tag"></i> Inventory Posting Groups</label>
+                    <div class="filter-group mb-3" id="inventoryGroupsContainer"><div class="text-muted text-center py-2">⬆ Upload BC file</div></div>
+                    <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="selectAllToggle" checked>
+                            <label class="form-check-label fw-semibold" for="selectAllToggle">All IPG</label>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="badge bg-light text-dark"><i class="bi bi-calendar3 me-1"></i>Date range</span>
+                            <input type="date" id="dateFrom" class="form-control-sm" style="border-radius:30px; width:140px;"> 
+                            <span class="mx-1">–</span>
+                            <input type="date" id="dateTo" class="form-control-sm" style="border-radius:30px; width:140px;">
+                            <button class="btn btn-sm btn-outline-primary rounded-pill" id="applyDateBtn">Apply</button>
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill" id="clearDateBtn">Clear</button>
+                        </div>
+                    </div>
+                    <div class="row align-items-center">
+                        <div class="col-md-8"><div class="summary-stat"><i class="bi bi-bar-chart-steps"></i> <span id="aggregatedStats">No data</span></div></div>
+                        <div class="col-md-4 text-md-end mt-2 mt-md-0">
+                            <button class="btn btn-success btn-rounded btn-sm" id="exportBtn" disabled><i class="bi bi-download"></i> Export All</button>
+                        </div>
+                    </div>
+                    <div id="aggregationInfo" class="mt-2 small text-muted"></div>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<div class="container">
-    <!-- Dual file upload row -->
-    <div class="row g-4 mb-4">
-        <div class="col-md-6">
-            <div class="card card-glass h-100 p-3">
+    <!-- Manual Mapping Card -->
+    <div class="row mt-3" id="mappingSection" style="display:none;">
+        <div class="col-12">
+            <div class="card-glass">
+                <div class="card-header-custom d-flex justify-content-between">
+                    <span><i class="bi bi-pencil-square"></i> Manual IPG Mapping for Unmatched Products</span>
+                    <span id="unmatchedCount" class="badge bg-warning text-dark">0</span>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title fw-bold"><i class="bi bi-receipt"></i> 1. Sales File (Excel)</h5>
-                    <p class="text-muted small">Columns: sale_id, product, customer_name, service_point, station, invoice_no, qty, user, status, price, amount, date, category, parent_category, tax_category, payment_mode, unit_cost</p>
-                    <div class="upload-zone p-4 text-center" id="salesUploadZone">
-                        <i class="bi bi-cloud-upload fs-1 text-secondary"></i>
-                        <p class="mt-2 mb-0">Click or drag to upload <strong>.xlsx, .xls</strong></p>
-                        <input type="file" id="salesFileInput" accept=".xlsx, .xls, .csv" class="d-none" />
-                        <div id="salesFileName" class="small text-success mt-2"></div>
+                    <div id="mappingContainer"></div>
+                    <div class="mapping-actions">
+                        <button class="btn btn-success btn-rounded btn-sm" id="applyMappingBtn"><i class="bi bi-check2-all"></i> Apply Mapping & Re-process</button>
+                        <button class="btn btn-outline-secondary btn-rounded btn-sm" id="autoMapFallbackBtn"><i class="bi bi-magic"></i> Auto-map via fuzzy match</button>
+                    </div>
+                    <div class="small text-muted mt-2">Assign each unmatched product to an IPG. Sales will be re-aggregated to match totals.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card-glass">
+                <div class="card-header-custom d-flex justify-content-between"><span><i class="bi bi-table"></i> Daily IPG Sales (pivot)</span><span id="resultCountBadge" class="badge bg-secondary">0</span></div>
+                <div class="card-body p-0">
+                    <div class="table-scroll">
+                        <table class="table table-hover table-bordered table-sm mb-0" id="pivotTable">
+                            <thead class="table-light sticky-header"><tr id="pivotHeader"><th>Inventory Posting Group</th></tr></thead>
+                            <tbody id="pivotBody"><tr><td class="text-muted text-center">Process data to see pivot</td></tr></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card card-glass h-100 p-3">
-                <div class="card-body">
-                    <h5 class="card-title fw-bold"><i class="bi bi-database"></i> 2. BC Master File (Excel)</h5>
-                    <p class="text-muted small">Columns: No., Description, Item Category Code, Production BOM No., Last Direct Cost, Unit Price, Profit %, GTIN, Inventory Posting Group, Item Category Code1, Shopify Synched, Inventory, VAT Prod. Posting Group, <span class="fw-bold">Inventory Posting Group1</span>, Last Date Modified, Vendor No., Default Deferral Template</p>
-                    <div class="upload-zone p-4 text-center" id="bcUploadZone">
-                        <i class="bi bi-file-spreadsheet fs-1 text-secondary"></i>
-                        <p class="mt-2 mb-0">Upload BC file (matching columns)</p>
-                        <input type="file" id="bcFileInput" accept=".xlsx, .xls" class="d-none" />
-                        <div id="bcFileName" class="small text-success mt-2"></div>
+    </div>
+
+    <div class="row mt-4" id="comparisonSection" style="display:none;">
+        <div class="col-12">
+            <div class="card-glass">
+                <div class="card-header-custom d-flex justify-content-between flex-wrap">
+                    <span><i class="bi bi-arrow-left-right"></i> <span id="compareTitle">Branch vs Branch · IPG Sales</span></span>
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill" id="closeCompareBtn"><i class="bi bi-x"></i> Close</button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-scroll">
+                        <table class="table table-sm table-bordered" id="compareTable">
+                            <thead id="compareHead" class="table-secondary"></thead>
+                            <tbody id="compareBody"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Manual Sales Entry Section -->
-    <div class="card card-glass mb-4">
-        <div class="card-header bg-transparent border-0 pt-3 fw-bold">
-            <i class="bi bi-pencil-square"></i> Manual Sales Entry (Uncaptured Invoices)
-            <span class="manual-summary-badge ms-2" id="manualCountBadge">0 entries</span>
-        </div>
-        <div class="card-body">
-            <p class="text-muted small mb-3">Add sales invoices not present in the uploaded sales file. These will be added to <strong>RETAIL</strong> section during analysis. Each invoice represents a unique customer.</p>
-            <div id="manualEntriesContainer"></div>
-            <button class="btn btn-outline-primary btn-sm mt-2" id="addManualEntryBtn">
-                <i class="bi bi-plus-circle"></i> Add Manual Invoice
-            </button>
-            <div class="alert alert-secondary mt-3 small">
-                <i class="bi bi-info-circle"></i> <strong>How it works:</strong> Each manual invoice contributes its amount to Retail sales and counts as 1 unique customer (based on invoice number). Multiple entries with same invoice number will be merged to avoid duplicate customer counting.
-            </div>
-        </div>
-    </div>
-
-    <!-- Action row -->
-    <div class="d-flex justify-content-center mb-5">
-        <button class="btn btn-custom-primary btn-lg px-5 shadow-sm" id="processBtn" disabled>
-            <i class="bi bi-graph-up"></i> Process Sales Sections
-        </button>
-        <button class="btn btn-outline-secondary ms-3 px-4" id="resetBtn"><i class="bi bi-arrow-repeat"></i> Reset All</button>
-    </div>
-
-    <!-- KPI Dashboard -->
-    <div id="kpiDashboard" style="display: none;">
-        <div class="row g-4 mb-4" id="kpiCardsRow"></div>
-        
-        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
-            <h4 class="fw-bold mb-2"><i class="bi bi-calendar-week"></i> Section Sales Snapshot</h4>
-            <div id="analysisDateDisplay" class="date-badge">
-                <i class="bi bi-calendar-check"></i> Analysis Date: <span id="analysisDateValue">—</span>
-            </div>
-        </div>
-        
-        <div class="card card-glass mt-2">
-            <div class="card-header bg-transparent border-0 pt-3 fw-bold"><i class="bi bi-table"></i> Sales Breakdown by Section</div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle" id="summaryTable">
-                        <thead class="table-light">
-                            <tr><th>Section</th><th>Total Sales (KSh)</th><th>Unique Customers (invoice_no)</th><th>% of Total Sales</th><th># Transactions</th></tr>
-                        </thead>
-                        <tbody id="summaryBody"></tbody>
-                    </table>
-                </div>
-                <div class="alert alert-info mt-3 small">
-                    <i class="bi bi-info-circle"></i> <strong>Unique customers count</strong> = distinct invoice_no from sales file + manual entries.<br>
-                    <strong>Manual entries</strong> are automatically assigned to RETAIL section.
-                </div>
-            </div>
-        </div>
-        <div class="mt-3 text-center text-muted">
-            <i class="bi bi-check-circle-fill text-success"></i> Categorization rules applied: Wholesale (box/outer/bale), Pharmacy (service_point = 'Syokimau Pharmacy'), Liquor (BC: WINES & SPIRITS), Deli/Bakery (xana & not water & BC not SPICES & FLAVOURS), Retail = remaining + manual entries.
-        </div>
-    </div>
-    
-    <footer>
-        <hr class="my-4">Upload both files, add manual invoices if needed, then process. Manual invoices are merged into retail section.
-    </footer>
 </div>
 
 <script>
-    // State
-    let salesData = [];        // array of rows (raw objects)
-    let bcData = [];           // BC rows
-    let salesHeaders = [];
-    let bcHeaders = [];
-    let salesFileLoaded = false;
-    let bcFileLoaded = false;
-    let extractedAnalysisDate = null;
-    
-    // Manual entries: array of { invoiceNo: string, amount: number }
-    let manualEntries = [];
-    
-    // DOM elements
-    const salesUploadZone = document.getElementById('salesUploadZone');
-    const salesFileInput = document.getElementById('salesFileInput');
-    const bcUploadZone = document.getElementById('bcUploadZone');
-    const bcFileInput = document.getElementById('bcFileInput');
+    // ---------- DATA STORES ----------
+    let salesDataRaw = [];
+    let bcDataRaw = [];
+    let productToIPG = new Map();
+    let productToNo = new Map();            // NEW: Description -> unique "No." key from BC file
+    let productNoLookupDone = false;        // NEW: flag
+    let uniqueIPGs = new Set();
+    let enrichedSales = [];
+    let allDates = [];
+    let ipgDateMap = new Map();
+    let currentFilteredIPGs = new Set();
+    let currentDateFrom = null;
+    let currentDateTo = null;
+    let currentPivotRows = [];
+    let allBranches = new Set();
+    let branchAggregationMap = new Map();
+    let totalRawSales = 0;
+    let totalRawQty = 0;
+    let totalProcessedSales = 0;
+    let totalProcessedQty = 0;
+    let lastCompareData = null;
+    let currentCompareMode = 'branch';
+    let unmatchedProducts = [];
+    let manualMapping = new Map();
+    let bcDescriptions = [];
+
+    // DOM refs
+    const salesInput = document.getElementById('salesFileInput');
+    const bcInput = document.getElementById('bcFileInput');
+    const salesDropZone = document.getElementById('salesDropZone');
+    const bcDropZone = document.getElementById('bcDropZone');
     const salesFileNameSpan = document.getElementById('salesFileName');
     const bcFileNameSpan = document.getElementById('bcFileName');
     const processBtn = document.getElementById('processBtn');
-    const resetBtn = document.getElementById('resetBtn');
-    const kpiDashboard = document.getElementById('kpiDashboard');
-    const kpiCardsRow = document.getElementById('kpiCardsRow');
-    const summaryBody = document.getElementById('summaryBody');
-    const analysisDateValueSpan = document.getElementById('analysisDateValue');
-    const manualEntriesContainer = document.getElementById('manualEntriesContainer');
-    const manualCountBadge = document.getElementById('manualCountBadge');
-    const addManualEntryBtn = document.getElementById('addManualEntryBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const inventoryGroupsContainer = document.getElementById('inventoryGroupsContainer');
+    const selectAllToggle = document.getElementById('selectAllToggle');
+    const dateFrom = document.getElementById('dateFrom');
+    const dateTo = document.getElementById('dateTo');
+    const applyDateBtn = document.getElementById('applyDateBtn');
+    const clearDateBtn = document.getElementById('clearDateBtn');
+    const pivotHeader = document.getElementById('pivotHeader');
+    const pivotBody = document.getElementById('pivotBody');
+    const aggregatedStats = document.getElementById('aggregatedStats');
+    const aggregationInfo = document.getElementById('aggregationInfo');
+    const resultCountBadge = document.getElementById('resultCountBadge');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const showAllGroupsBtn = document.getElementById('showAllGroupsBtn');
+    const compareBranchesBtn = document.getElementById('compareBranchesBtn');
+    const pharmacyCompareBtn = document.getElementById('pharmacyCompareBtn');
+    const closeCompareBtn = document.getElementById('closeCompareBtn');
+    const comparisonSection = document.getElementById('comparisonSection');
+    const compareHead = document.getElementById('compareHead');
+    const compareBody = document.getElementById('compareBody');
+    const compareTitle = document.getElementById('compareTitle');
+    const mappingSection = document.getElementById('mappingSection');
+    const mappingContainer = document.getElementById('mappingContainer');
+    const applyMappingBtn = document.getElementById('applyMappingBtn');
+    const autoMapFallbackBtn = document.getElementById('autoMapFallbackBtn');
+    const unmatchedCount = document.getElementById('unmatchedCount');
 
-    // Helper: parse excel file using SheetJS
-    function parseExcelFile(file, callback) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
-            callback(rows);
-        };
-        reader.onerror = (err) => {
-            console.error(err);
-            alert("Error reading file");
-            callback(null);
-        };
-        reader.readAsArrayBuffer(file);
+    function showLoader() { loadingOverlay.style.display = 'flex'; }
+    function hideLoader() { loadingOverlay.style.display = 'none'; }
+
+    function readExcel(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const wb = XLSX.read(e.target.result, { type: 'array', defval: "", cellDates: true });
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    const data = XLSX.utils.sheet_to_json(ws, { defval: "", raw: false });
+                    resolve(data);
+                } catch (err) { reject(err); }
+            };
+            reader.onerror = reject;
+            reader.readAsArrayBuffer(file);
+        });
     }
 
-    function updateProcessButton() {
-        processBtn.disabled = !(salesFileLoaded && bcFileLoaded);
-        if (!processBtn.disabled) {
-            processBtn.classList.remove('btn-secondary');
-            processBtn.classList.add('btn-custom-primary');
-        } else {
-            processBtn.classList.remove('btn-custom-primary');
-            processBtn.classList.add('btn-secondary');
+    function setupDragDrop(zone, input, nameSpan) {
+        zone.addEventListener('click', () => input.click());
+        zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor = '#0d6efd'; });
+        zone.addEventListener('dragleave', () => zone.style.borderColor = '#b8d0dd');
+        zone.addEventListener('drop', e => {
+            e.preventDefault();
+            zone.style.borderColor = '#b8d0dd';
+            const f = e.dataTransfer.files[0];
+            if (f && (f.name.endsWith('.xlsx') || f.name.endsWith('.xls') || f.name.endsWith('.csv') || f.name.endsWith('.xlsm'))) {
+                const dt = new DataTransfer();
+                dt.items.add(f);
+                input.files = dt.files;
+                nameSpan.innerHTML = `<span class="file-status"><i class="bi bi-check-circle-fill text-success"></i> ${f.name}</span>`;
+                checkReady();
+            } else alert('Please upload an Excel or CSV file');
+        });
+        input.addEventListener('change', () => {
+            if (input.files.length) {
+                nameSpan.innerHTML = `<span class="file-status"><i class="bi bi-check-circle-fill text-success"></i> ${input.files[0].name}</span>`;
+            } else {
+                nameSpan.innerHTML = '';
+            }
+            checkReady();
+        });
+    }
+
+    function checkReady() {
+        processBtn.disabled = !(salesInput.files.length && bcInput.files.length);
+    }
+
+    function findColumn(row, possibleNames) {
+        if (!row) return undefined;
+        for (const name of possibleNames) {
+            if (row[name] !== undefined && row[name] !== null && row[name] !== '') return row[name];
+            for (const key of Object.keys(row)) {
+                if (key.toLowerCase() === name.toLowerCase()) {
+                    const val = row[key];
+                    if (val !== undefined && val !== null && val !== '') return val;
+                }
+            }
         }
+        return undefined;
     }
 
-    // Manual entry management
-    function renderManualEntries() {
-        if (!manualEntriesContainer) return;
-        if (manualEntries.length === 0) {
-            manualEntriesContainer.innerHTML = '<div class="text-muted text-center py-3"><i class="bi bi-inbox"></i> No manual entries added. Click "Add Manual Invoice" to include uncaptured sales.</div>';
-            manualCountBadge.textContent = '0 entries';
+    function parseDate(value) {
+        if (!value) return null;
+        if (value instanceof Date && !isNaN(value)) return value;
+        if (typeof value === 'number' && value > 59) {
+            const d = new Date(1899, 11, 30);
+            d.setTime(d.getTime() + value * 86400000);
+            if (!isNaN(d)) return d;
+        }
+        const str = String(value).trim();
+        if (!str) return null;
+        let match = str.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:\s+(\d{1,2}):(\d{2}))?/);
+        if (match) {
+            let month = parseInt(match[1]) - 1, day = parseInt(match[2]), year = parseInt(match[3]);
+            if (year < 100) year += 2000;
+            let hours = match[4] ? parseInt(match[4]) : 0, minutes = match[5] ? parseInt(match[5]) : 0;
+            const d = new Date(year, month, day, hours, minutes);
+            if (!isNaN(d)) return d;
+        }
+        match = str.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+        if (match) {
+            const d = new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+            if (!isNaN(d)) return d;
+        }
+        const d = new Date(str);
+        if (!isNaN(d)) return d;
+        return null;
+    }
+
+    function formatDateToDDMMYY(dateObj) {
+        if (!dateObj || isNaN(dateObj)) return null;
+        const d = dateObj.getDate(), m = dateObj.getMonth() + 1, y = dateObj.getFullYear().toString().slice(-2);
+        return `${String(d).padStart(2, '0')}-${String(m).padStart(2, '0')}-${y}`;
+    }
+
+    function getAggregatedBranch(originalBranch) {
+        if (!originalBranch) return 'Unknown';
+        const b = String(originalBranch).trim().toLowerCase();
+        if (b.includes('syokimau deli') || b.includes('syokimau pharmacy') || b.includes('syokimau retail')) return 'Syokimau';
+        if (b.includes('ruiru deli') || b.includes('ruiru pharmacy') || b.includes('ruiru retail')) return 'Ruiru';
+        return String(originalBranch).trim();
+    }
+
+    function isPharmacy(branchName) {
+        if (!branchName) return false;
+        return String(branchName).toLowerCase().includes('pharmacy');
+    }
+
+    function fuzzyMatch(product, bcList) {
+        if (!product || !bcList.length) return null;
+        const pTokens = product.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(/\s+/).filter(t => t.length > 1);
+        if (!pTokens.length) return null;
+        let best = null, bestScore = 0;
+        for (const entry of bcList) {
+            const desc = entry[0], ipg = entry[1];
+            const dTokens = desc.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(/\s+/).filter(t => t.length > 1);
+            if (!dTokens.length) continue;
+            let common = 0;
+            for (const pt of pTokens) {
+                for (const dt of dTokens) {
+                    if (pt === dt || dt.includes(pt) || pt.includes(dt)) { common++; break; }
+                }
+            }
+            const score = common / Math.max(pTokens.length, dTokens.length);
+            if (score > bestScore && score > 0.3) {
+                bestScore = score;
+                best = { ipg, desc, score };
+            }
+        }
+        return best;
+    }
+
+    // NEW: resolve the "No." unique key for a given description (exact, then fuzzy)
+    function resolveProductNo(productKey) {
+        if (!productKey) return '';
+        if (productToNo.has(productKey)) return productToNo.get(productKey);
+        // try case-insensitive / trimmed lookup
+        const target = String(productKey).trim().toLowerCase();
+        for (const [desc, no] of productToNo) {
+            if (desc.trim().toLowerCase() === target) return no;
+        }
+        // fuzzy fallback — reuse the matched description's No.
+        const match = fuzzyMatch(productKey, bcDescriptions);
+        if (match && productToNo.has(match.desc)) {
+            const no = productToNo.get(match.desc);
+            productToNo.set(productKey, no); // cache it
+            return no;
+        }
+        return '';
+    }
+
+    // ---------- AGGREGATION HELPER ----------
+    function aggregateSales(salesArray) {
+        const aggMap = new Map();
+        let totalAmount = 0;
+        let totalQty = 0;
+        
+        for (const sale of salesArray) {
+            // Create a unique key for aggregation
+            const key = `${sale.product}||${sale.ipg}||${sale.branch}||${sale.aggregatedBranch}||${sale.dateStr}`;
+            
+            if (aggMap.has(key)) {
+                const existing = aggMap.get(key);
+                existing.amount += sale.amount;
+                existing.qty += sale.qty || 0;
+            } else {
+                aggMap.set(key, {
+                    ...sale,
+                    amount: sale.amount,
+                    qty: sale.qty || 0
+                });
+            }
+            totalAmount += sale.amount;
+            totalQty += sale.qty || 0;
+        }
+        
+        return {
+            aggregated: Array.from(aggMap.values()),
+            totalAmount: totalAmount,
+            totalQty: totalQty
+        };
+    }
+
+    // ---------- MAIN PROCESSING ----------
+    async function processData() {
+        if (!salesInput.files.length || !bcInput.files.length) {
+            alert('Please select both the POS Sales file and BC Mapping file.');
             return;
         }
-        
-        let html = '';
-        manualEntries.forEach((entry, idx) => {
-            html += `
-                <div class="manual-entry-row d-flex align-items-center gap-3 flex-wrap" data-idx="${idx}">
-                    <div class="flex-grow-1">
-                        <label class="small text-muted mb-1">Invoice Number</label>
-                        <input type="text" class="form-control form-control-sm manual-invoice" value="${escapeHtml(entry.invoiceNo)}" placeholder="INV-001" style="max-width: 200px;">
-                    </div>
-                    <div class="flex-grow-1">
-                        <label class="small text-muted mb-1">Amount (KES)</label>
-                        <input type="number" class="form-control form-control-sm manual-amount" value="${entry.amount}" placeholder="0.00" step="0.01" style="max-width: 180px;">
-                    </div>
-                    <div class="mt-3 mt-sm-0">
-                        <i class="bi bi-trash3 fs-5 text-danger remove-manual-btn" data-idx="${idx}" title="Remove entry"></i>
-                    </div>
-                </div>
-            `;
-        });
-        manualEntriesContainer.innerHTML = html;
-        manualCountBadge.textContent = `${manualEntries.length} entry${manualEntries.length !== 1 ? 's' : ''}`;
-        
-        // Attach event listeners to inputs and remove buttons
-        document.querySelectorAll('.manual-entry-row').forEach(row => {
-            const idx = parseInt(row.dataset.idx);
-            const invoiceInput = row.querySelector('.manual-invoice');
-            const amountInput = row.querySelector('.manual-amount');
-            const removeBtn = row.querySelector('.remove-manual-btn');
-            
-            if (invoiceInput) {
-                invoiceInput.addEventListener('change', (e) => {
-                    manualEntries[idx].invoiceNo = e.target.value.trim() || `MANUAL_${idx+1}`;
-                    renderManualEntries(); // re-render to keep consistency
+        showLoader();
+        try {
+            const salesRows = await readExcel(salesInput.files[0]);
+            const bcRows = await readExcel(bcInput.files[0]);
+            if (!salesRows || salesRows.length === 0) throw new Error('Sales file is empty or invalid');
+            if (!bcRows || bcRows.length === 0) throw new Error('BC Mapping file is empty or invalid');
+            salesDataRaw = salesRows;
+            bcDataRaw = bcRows;
+
+            totalRawSales = 0;
+            totalRawQty = 0;
+            for (const row of salesRows) {
+                const amount = parseFloat(findColumn(row, ['Amount', 'amount', 'AMOUNT', 'Total', 'Sales Amount'])) || 0;
+                const qty = parseFloat(findColumn(row, ['Qty', 'qty', 'QTY', 'Quantity', 'quantity', 'Units'])) || 0;
+                if (amount > 0) {
+                    totalRawSales += amount;
+                    totalRawQty += qty;
+                }
+            }
+
+            productToIPG.clear();
+            productToNo.clear();          // NEW
+            uniqueIPGs.clear();
+            bcDescriptions = [];
+            let noColumnFound = false;
+
+            for (const row of bcRows) {
+                const desc = findColumn(row, ['Description', 'description', 'ITEM DESCRIPTION', 'Product Description', 'Item Description']);
+                const ipg = findColumn(row, ['Inventory Posting Group', 'Inventory Posting Group1', 'inventory posting group', 'IPG', 'Posting Group']);
+                // NEW: unique key column named "No."
+                const noVal = findColumn(row, ['No.', 'No', 'NO.', 'NO', 'No ', 'Item No.', 'Item No', 'Product No.', 'Product No', 'Number', 'Code']);
+
+                if (desc) {
+                    const descKey = String(desc).trim();
+                    const ipgValue = ipg ? String(ipg).trim() : 'Unassigned';
+                    productToIPG.set(descKey, ipgValue);
+                    uniqueIPGs.add(ipgValue);
+                    bcDescriptions.push([descKey, ipgValue]);
+
+                    if (noVal !== undefined && noVal !== null && String(noVal).trim() !== '') {
+                        productToNo.set(descKey, String(noVal).trim());
+                        noColumnFound = true;
+                    }
+                }
+            }
+            productNoLookupDone = noColumnFound;
+            if (!noColumnFound) {
+                console.warn('⚠️ No "No." column detected in the BC mapping file — product numbers will be blank on export.');
+            }
+
+            if (uniqueIPGs.size === 0) {
+                uniqueIPGs.add('All Items');
+                for (const row of bcRows) {
+                    const desc = findColumn(row, ['Description', 'description']);
+                    if (desc) {
+                        const descKey = String(desc).trim();
+                        productToIPG.set(descKey, descKey);
+                        uniqueIPGs.add(descKey);
+                        bcDescriptions.push([descKey, descKey]);
+                    }
+                }
+            }
+
+            enrichedSales = [];
+            const dateSet = new Set();
+            allBranches.clear();
+            branchAggregationMap.clear();
+            totalProcessedSales = 0;
+            totalProcessedQty = 0;
+            const unmatchedMap = new Map();
+
+            for (const sale of salesRows) {
+                const product = findColumn(sale, ['Product', 'product', 'PRODUCT', 'Item', 'Item Description', 'Description']);
+                if (!product) continue;
+                const productKey = String(product).trim();
+                const amountVal = findColumn(sale, ['Amount', 'amount', 'AMOUNT', 'Total', 'Sales Amount']);
+                const amount = parseFloat(amountVal) || 0;
+                if (amount <= 0) continue;
+
+                // Extract quantity
+                const qtyVal = findColumn(sale, ['Qty', 'qty', 'QTY', 'Quantity', 'quantity', 'Units']);
+                const qty = parseFloat(qtyVal) || 0;
+
+                const branch = findColumn(sale, ['Service Point', 'Service_Point', 'service point', 'Branch', 'branch', 'Location', 'Store']);
+                const originalBranch = branch ? String(branch).trim() : 'Unknown';
+                const aggregatedBranch = getAggregatedBranch(originalBranch);
+                branchAggregationMap.set(originalBranch, aggregatedBranch);
+                allBranches.add(aggregatedBranch);
+
+                const dateVal = findColumn(sale, ['Date', 'date', 'DATE', 'Transaction Date', 'Posting Date']);
+                const dateObj = parseDate(dateVal);
+                if (!dateObj || isNaN(dateObj)) continue;
+                const dateStr = formatDateToDDMMYY(dateObj);
+                if (!dateStr) continue;
+                dateSet.add(dateStr);
+
+                let ipg = productToIPG.get(productKey);
+                if (!ipg) {
+                    if (!unmatchedMap.has(productKey)) {
+                        unmatchedMap.set(productKey, { totalAmount: 0, totalQty: 0, sales: [] });
+                    }
+                    const entry = unmatchedMap.get(productKey);
+                    entry.totalAmount += amount;
+                    entry.totalQty += qty;
+                    entry.sales.push({ product: productKey, amount, qty, branch: originalBranch, aggregatedBranch, dateObj, dateStr, isPharmacy: isPharmacy(originalBranch) });
+                    ipg = '⚠️ Not Mapped';
+                }
+
+                enrichedSales.push({
+                    product: productKey,
+                    amount: amount,
+                    qty: qty,
+                    ipg: ipg,
+                    branch: originalBranch,
+                    aggregatedBranch: aggregatedBranch,
+                    dateObj: dateObj,
+                    dateStr: dateStr,
+                    isPharmacy: isPharmacy(originalBranch),
+                    _unmatched: ipg === '⚠️ Not Mapped'
                 });
+                if (ipg !== '⚠️ Not Mapped') {
+                    totalProcessedSales += amount;
+                    totalProcessedQty += qty;
+                }
             }
-            if (amountInput) {
-                amountInput.addEventListener('change', (e) => {
-                    let val = parseFloat(e.target.value);
-                    manualEntries[idx].amount = isNaN(val) ? 0 : val;
-                    renderManualEntries();
-                });
+
+            // Aggregate enriched sales to remove duplicates
+            const aggResult = aggregateSales(enrichedSales);
+            enrichedSales = aggResult.aggregated;
+            totalProcessedSales = aggResult.totalAmount;
+            totalProcessedQty = aggResult.totalQty;
+
+            unmatchedProducts = [];
+            for (const [prod, data] of unmatchedMap) {
+                unmatchedProducts.push({ product: prod, totalAmount: data.totalAmount, totalQty: data.totalQty, sales: data.sales });
             }
-            if (removeBtn) {
-                removeBtn.addEventListener('click', () => {
-                    manualEntries.splice(idx, 1);
-                    renderManualEntries();
-                });
-            }
-        });
-    }
-    
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
-    }
-    
-    function addManualEntry() {
-        const newInvoiceNo = `MANUAL_${Date.now().toString().slice(-6)}`;
-        manualEntries.push({ invoiceNo: newInvoiceNo, amount: 0 });
-        renderManualEntries();
-    }
-    
-    // Merge manual entries into sales data as additional rows (RETAIL section)
-    function mergeManualEntriesIntoSales(originalSalesRows) {
-        if (!manualEntries.length) return [...originalSalesRows];
-        
-        const manualRows = [];
-        const existingInvoices = new Set();
-        for (const row of originalSalesRows) {
-            const inv = (row['invoice_no'] || row['Invoice_No'] || row['invoice number'] || '').toString().trim();
-            if (inv) existingInvoices.add(inv);
-        }
-        
-        for (const entry of manualEntries) {
-            const invNo = entry.invoiceNo.trim();
-            if (!invNo) continue;
-            // Create a synthetic sales row that will be categorized as RETAIL
-            const syntheticRow = {
-                sale_id: `manual_${Date.now()}_${Math.random()}`,
-                product: "MANUAL ENTRY (Uncaptured Invoice)",
-                customer_name: "Manual Customer",
-                service_point: "Manual Entry",
-                station: "Manual",
-                invoice_no: invNo,
-                qty: 1,
-                user: "system",
-                status: "completed",
-                price: entry.amount,
-                amount: entry.amount,
-                date: new Date().toISOString(),
-                category: "Manual",
-                parent_category: "Retail",
-                tax_category: "Standard",
-                payment_mode: "Manual",
-                unit_cost: entry.amount,
-                // Flag to identify manual entry
-                is_manual_entry: true
-            };
-            manualRows.push(syntheticRow);
-        }
-        
-        return [...originalSalesRows, ...manualRows];
-    }
-    
-    // Extract analysis date from sales data (including merged)
-    function extractAnalysisDateFromSales(salesRows) {
-        if (!salesRows || salesRows.length === 0) return "Date not available";
-        
-        const firstRow = salesRows[0];
-        let dateColumnKey = null;
-        for (let key in firstRow) {
-            if (key.toLowerCase() === 'date') {
-                dateColumnKey = key;
-                break;
-            }
-        }
-        
-        if (!dateColumnKey) return "Date column missing";
-        
-        const parsedDates = [];
-        for (const row of salesRows) {
-            const dateValue = row[dateColumnKey];
-            if (dateValue && typeof dateValue === 'string' && dateValue.trim() !== "") {
-                const parsed = parseSaleDate(dateValue);
-                if (parsed) parsedDates.push(parsed);
-            } else if (dateValue && typeof dateValue === 'number') {
-                const excelDate = convertExcelSerialToDate(dateValue);
-                if (excelDate) parsedDates.push(excelDate);
-            }
-        }
-        
-        if (parsedDates.length === 0) return "No valid dates found";
-        
-        const frequency = {};
-        let maxFreq = 0;
-        let mostFrequentDate = null;
-        for (const dt of parsedDates) {
-            const dateKey = dt.toDateString();
-            frequency[dateKey] = (frequency[dateKey] || 0) + 1;
-            if (frequency[dateKey] > maxFreq) {
-                maxFreq = frequency[dateKey];
-                mostFrequentDate = dt;
-            }
-        }
-        
-        if (mostFrequentDate) return formatDateNice(mostFrequentDate);
-        return "Date parsing error";
-    }
-    
-    function parseSaleDate(dateStr) {
-        if (!dateStr) return null;
-        const str = String(dateStr).trim();
-        let d = new Date(str);
-        if (!isNaN(d.getTime()) && d.getFullYear() > 2000) return d;
-        
-        const num = parseFloat(str);
-        if (!isNaN(num) && num > 40000 && num < 50000) {
-            const excelDate = convertExcelSerialToDate(num);
-            if (excelDate) return excelDate;
-        }
-        
-        const regex = /([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})/;
-        const match = str.match(regex);
-        if (match) {
-            const monthName = match[1];
-            const day = parseInt(match[2], 10);
-            const year = parseInt(match[3], 10);
-            const monthMap = { 'Jan':0, 'January':0, 'Feb':1, 'February':1, 'Mar':2, 'March':2, 'Apr':3, 'April':3, 'May':4, 'Jun':5, 'June':5, 'Jul':6, 'July':6, 'Aug':7, 'August':7, 'Sep':8, 'September':8, 'Oct':9, 'October':9, 'Nov':10, 'November':10, 'Dec':11, 'December':11 };
-            let month = monthMap[monthName];
-            if (month !== undefined && day && year) return new Date(year, month, day);
-        }
-        return null;
-    }
-    
-    function convertExcelSerialToDate(serial) {
-        const excelEpoch = new Date(1899, 11, 30);
-        const days = Math.floor(serial);
-        const date = new Date(excelEpoch.getTime() + days * 86400000);
-        if (!isNaN(date.getTime()) && date.getFullYear() > 2000) return date;
-        return null;
-    }
-    
-    function formatDateNice(date) {
-        if (!date || isNaN(date.getTime())) return "Unknown date";
-        return date.toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
-    }
-    
-    function onSalesLoaded(rows, filename) {
-        if (!rows.length) { alert("Sales file is empty"); return; }
-        salesData = rows;
-        salesHeaders = Object.keys(rows[0] || {});
-        salesFileLoaded = true;
-        updateProcessButton();
-    }
-    
-    function onBCLoaded(rows, filename) {
-        if (!rows.length) { alert("BC file is empty"); return; }
-        bcData = rows;
-        bcHeaders = Object.keys(rows[0] || {});
-        bcFileLoaded = true;
-        updateProcessButton();
-    }
-    
-    function buildBCLookupMap() {
-        const map = new Map();
-        for (const row of bcData) {
-            let desc = row['Description'] ? String(row['Description']).trim() : "";
-            let invGroup = row['Inventory Posting Group1'] ? String(row['Inventory Posting Group1']).trim() : "";
-            if (desc) map.set(desc.toLowerCase(), invGroup);
-        }
-        return map;
-    }
-    
-    function categorizeSales(salesRowsMerged) {
-        if (!salesRowsMerged.length || !bcData.length) return null;
-        const bcLookup = buildBCLookupMap();
-        
-        return salesRowsMerged.map((row, idx) => {
-            const productDesc = (row['product'] || row['Product'] || "").toString().toLowerCase().trim();
-            const amountRaw = parseFloat(row['amount'] || row['Amount'] || 0);
-            const amount = isNaN(amountRaw) ? 0 : amountRaw;
-            const servicePoint = (row['service_point'] || row['service point'] || row['Service_Point'] || "").toString().trim();
-            const invoiceNo = (row['invoice_no'] || row['Invoice_No'] || row['invoice number'] || "").toString().trim() || `inv_${idx}`;
-            const isManual = row.is_manual_entry === true;
-            
-            let section = "RETAIL";
-            // Manual entries always go to RETAIL
-            if (isManual) {
-                section = "RETAIL";
-            } else if (productDesc.includes("box") || productDesc.includes("outer") || productDesc.includes("bale")) {
-                section = "WHOLESALE";
-            } else if (servicePoint === "Syokimau Pharmacy") {
-                section = "PHARMACY";
+
+            if (unmatchedProducts.length > 0) {
+                mappingSection.style.display = 'block';
+                unmatchedCount.textContent = unmatchedProducts.length;
+                renderMappingUI();
+                applyFuzzyFallback();
             } else {
-                let matchedBCGroup = null;
-                for (let [bcDesc, invGroup] of bcLookup.entries()) {
-                    if (productDesc === bcDesc || productDesc.includes(bcDesc) || bcDesc.includes(productDesc)) {
-                        if (productDesc === bcDesc) { matchedBCGroup = invGroup; break; }
-                        else if (!matchedBCGroup) matchedBCGroup = invGroup;
-                    }
+                mappingSection.style.display = 'none';
+            }
+
+            if (unmatchedProducts.length === 0) {
+                finalizeProcessing(dateSet);
+            } else {
+                hideLoader();
+            }
+
+        } catch (err) {
+            hideLoader();
+            console.error('Processing error:', err);
+            alert('❌ Error processing data: ' + err.message);
+        }
+    }
+
+    function renderMappingUI() {
+        if (!unmatchedProducts.length) {
+            mappingContainer.innerHTML = '<div class="text-muted">All products matched successfully.</div>';
+            return;
+        }
+        const sortedIPGs = Array.from(uniqueIPGs).sort();
+        let html = '';
+        for (const item of unmatchedProducts) {
+            const currentSelection = manualMapping.get(item.product) || '';
+            const knownNo = resolveProductNo(item.product);
+            const noBadge = knownNo ? `<span class="prod-no-badge"><i class="bi bi-hash"></i> ${knownNo}</span>` : `<span class="prod-no-badge text-muted">No key</span>`;
+            html += `<div class="mapping-row">
+                <span class="product-name">${item.product}</span>
+                ${noBadge}
+                <span class="badge bg-secondary">${item.totalAmount.toFixed(2)}</span>
+                <span class="badge bg-info">Qty: ${item.totalQty.toFixed(0)}</span>
+                <select class="form-select form-select-sm" style="width:auto;min-width:160px;" data-product="${item.product}">
+                    <option value="">-- Select IPG --</option>`;
+            for (const ipg of sortedIPGs) {
+                const sel = (ipg === currentSelection) ? 'selected' : '';
+                html += `<option value="${ipg}" ${sel}>${ipg}</option>`;
+            }
+            html += `</select>
+                <span class="unmatched-badge"><i class="bi bi-exclamation-triangle"></i> unmatched</span>
+            </div>`;
+        }
+        mappingContainer.innerHTML = html;
+
+        document.querySelectorAll('.mapping-row select').forEach(sel => {
+            sel.addEventListener('change', function() {
+                const prod = this.dataset.product;
+                const val = this.value;
+                if (val) manualMapping.set(prod, val);
+                else manualMapping.delete(prod);
+            });
+        });
+    }
+
+    function applyFuzzyFallback() {
+        if (!bcDescriptions.length) return;
+        for (const item of unmatchedProducts) {
+            const match = fuzzyMatch(item.product, bcDescriptions);
+            if (match) {
+                if (!manualMapping.has(item.product)) {
+                    manualMapping.set(item.product, match.ipg);
                 }
-                if (!matchedBCGroup) {
-                    for (let [bcDesc, invGroup] of bcLookup.entries()) {
-                        if (productDesc.includes(bcDesc) || bcDesc.includes(productDesc)) {
-                            matchedBCGroup = invGroup;
-                            break;
-                        }
-                    }
-                }
-                if (matchedBCGroup && matchedBCGroup.toUpperCase() === "WINES & SPIRITS") {
-                    section = "LIQUOR";
-                } else if (productDesc.includes("xana") && !productDesc.includes("water")) {
-                    let bcGroupForDeli = null;
-                    for (let [bcDesc, invGroup] of bcLookup.entries()) {
-                        if (productDesc.includes(bcDesc) || bcDesc.includes(productDesc)) {
-                            bcGroupForDeli = invGroup;
-                            break;
-                        }
-                    }
-                    if (!bcGroupForDeli || bcGroupForDeli.toUpperCase() !== "SPICES & FLAVOURS") {
-                        section = "DELI/BAKERY";
-                    }
+                // NEW: backfill the unique No. from the fuzzy-matched BC description
+                if (!productToNo.has(item.product) && productToNo.has(match.desc)) {
+                    productToNo.set(item.product, productToNo.get(match.desc));
                 }
             }
-            return { ...row, amount, invoiceNo, section };
-        });
+        }
+        renderMappingUI();
     }
-    
-    function computeKPIs(categorizedRows) {
-        const sectionsMap = new Map();
-        const sectionsList = ["WHOLESALE", "PHARMACY", "LIQUOR", "DELI/BAKERY", "RETAIL"];
-        sectionsList.forEach(sec => sectionsMap.set(sec, { totalSales: 0, uniqueInvoicesSet: new Set(), transactions: 0 }));
-        
-        for (const row of categorizedRows) {
-            const sec = row.section;
-            const amount = row.amount;
-            const invoice = row.invoiceNo;
-            if (sectionsMap.has(sec)) {
-                const stats = sectionsMap.get(sec);
-                stats.totalSales += amount;
-                if (invoice && invoice !== "") stats.uniqueInvoicesSet.add(invoice);
-                stats.transactions += 1;
+
+    function applyManualMapping() {
+        showLoader();
+        try {
+            const finalMap = new Map(productToIPG);
+            for (const [prod, ipg] of manualMapping) {
+                if (ipg) finalMap.set(prod, ipg);
             }
+
+            const newEnriched = [];
+            const dateSet = new Set();
+            totalProcessedSales = 0;
+            totalProcessedQty = 0;
+            
+            for (const sale of salesDataRaw) {
+                const product = findColumn(sale, ['Product', 'product', 'PRODUCT', 'Item', 'Item Description', 'Description']);
+                if (!product) continue;
+                const productKey = String(product).trim();
+                const amountVal = findColumn(sale, ['Amount', 'amount', 'AMOUNT', 'Total', 'Sales Amount']);
+                const amount = parseFloat(amountVal) || 0;
+                if (amount <= 0) continue;
+
+                const qtyVal = findColumn(sale, ['Qty', 'qty', 'QTY', 'Quantity', 'quantity', 'Units']);
+                const qty = parseFloat(qtyVal) || 0;
+
+                const branch = findColumn(sale, ['Service Point', 'Service_Point', 'service point', 'Branch', 'branch', 'Location', 'Store']);
+                const originalBranch = branch ? String(branch).trim() : 'Unknown';
+                const aggregatedBranch = getAggregatedBranch(originalBranch);
+
+                const dateVal = findColumn(sale, ['Date', 'date', 'DATE', 'Transaction Date', 'Posting Date']);
+                const dateObj = parseDate(dateVal);
+                if (!dateObj || isNaN(dateObj)) continue;
+                const dateStr = formatDateToDDMMYY(dateObj);
+                if (!dateStr) continue;
+                dateSet.add(dateStr);
+
+                let ipg = finalMap.get(productKey);
+                if (!ipg) {
+                    const match = fuzzyMatch(productKey, bcDescriptions);
+                    ipg = match ? match.ipg : 'Uncategorized';
+                    // NEW: backfill unique No. for fuzzy-resolved products
+                    if (match && !productToNo.has(productKey) && productToNo.has(match.desc)) {
+                        productToNo.set(productKey, productToNo.get(match.desc));
+                    }
+                }
+                // NEW: ensure the product has a No. if it exists anywhere in the BC map
+                if (!productToNo.has(productKey)) {
+                    const resolved = resolveProductNo(productKey);
+                    if (resolved) productToNo.set(productKey, resolved);
+                }
+
+                newEnriched.push({
+                    product: productKey,
+                    amount: amount,
+                    qty: qty,
+                    ipg: ipg,
+                    branch: originalBranch,
+                    aggregatedBranch: aggregatedBranch,
+                    dateObj: dateObj,
+                    dateStr: dateStr,
+                    isPharmacy: isPharmacy(originalBranch),
+                    _unmatched: false
+                });
+                totalProcessedSales += amount;
+                totalProcessedQty += qty;
+            }
+
+            // Aggregate to remove duplicates
+            const aggResult = aggregateSales(newEnriched);
+            enrichedSales = aggResult.aggregated;
+            totalProcessedSales = aggResult.totalAmount;
+            totalProcessedQty = aggResult.totalQty;
+            
+            allDates = Array.from(dateSet).sort((a, b) => {
+                const [da, ma, ya] = a.split('-').map(Number);
+                const [db, mb, yb] = b.split('-').map(Number);
+                if (ya !== yb) return ya - yb;
+                if (ma !== mb) return ma - mb;
+                return da - db;
+            });
+
+            ipgDateMap.clear();
+            uniqueIPGs.clear();
+            for (const sale of enrichedSales) {
+                uniqueIPGs.add(sale.ipg);
+                const key = sale.ipg + '||' + sale.dateStr;
+                ipgDateMap.set(key, (ipgDateMap.get(key) || 0) + sale.amount);
+            }
+
+            currentFilteredIPGs = new Set(uniqueIPGs);
+            selectAllToggle.checked = true;
+            renderIPGChips();
+            applyFiltersAndRender();
+            mappingSection.style.display = 'none';
+            hideLoader();
+            alert(`✅ Mapping applied! ${enrichedSales.length} aggregated sales records processed. Total Amount: ${totalProcessedSales.toFixed(2)}, Total Qty: ${totalProcessedQty.toFixed(0)}`);
+
+        } catch (err) {
+            hideLoader();
+            console.error(err);
+            alert('Error applying mapping: ' + err.message);
         }
-        
-        let overallTotal = 0;
-        for (let stats of sectionsMap.values()) overallTotal += stats.totalSales;
-        
-        const result = [];
-        for (let [section, stats] of sectionsMap.entries()) {
-            const percent = overallTotal > 0 ? (stats.totalSales / overallTotal) * 100 : 0;
-            result.push({ section, totalSales: stats.totalSales, uniqueCustomers: stats.uniqueInvoicesSet.size, percentOfTotal: percent, transactions: stats.transactions });
-        }
-        return { sections: result, overallTotal };
     }
-    
-    function formatCurrency(value) {
-        return new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', minimumFractionDigits: 0 }).format(value);
-    }
-    
-    function renderDashboard(sectionsArray, overallTotal) {
-        kpiDashboard.style.display = "block";
-        analysisDateValueSpan.textContent = extractedAnalysisDate || "Not available";
-        
-        kpiCardsRow.innerHTML = "";
-        const colorMap = { "WHOLESALE": "#2c5f2d", "PHARMACY": "#1e88e5", "LIQUOR": "#b23c1c", "DELI/BAKERY": "#e67e22", "RETAIL": "#6c757d" };
-        for (const sec of sectionsArray) {
-            const cardColor = colorMap[sec.section] || "#0f172a";
-            const colDiv = document.createElement('div');
-            colDiv.className = "col-md-6 col-lg-3";
-            colDiv.innerHTML = `
-                <div class="kpi-card" style="border-left-color: ${cardColor};">
-                    <div class="kpi-title">${sec.section}</div>
-                    <div class="kpi-value">${formatCurrency(sec.totalSales)}</div>
-                    <div class="d-flex justify-content-between mt-2">
-                        <span><i class="bi bi-people"></i> ${sec.uniqueCustomers} customers</span>
-                        <span><i class="bi bi-percent"></i> ${sec.percentOfTotal.toFixed(1)}%</span>
-                    </div>
-                    <div class="progress mt-2"><div class="progress-bar" style="width: ${sec.percentOfTotal}%; background-color: ${cardColor};"></div></div>
-                    <div class="small text-muted mt-2"><i class="bi bi-receipt"></i> ${sec.transactions} invoices</div>
-                </div>
-            `;
-            kpiCardsRow.appendChild(colDiv);
-        }
-        
-        summaryBody.innerHTML = "";
-        for (const sec of sectionsArray) {
-            const row = document.createElement('tr');
-            row.innerHTML = `<td><span class="badge badge-section px-3 py-2">${sec.section}</span></td><td class="fw-bold">${formatCurrency(sec.totalSales)}</td><td>${sec.uniqueCustomers}</td><td>${sec.percentOfTotal.toFixed(2)}%</td><td>${sec.transactions}</td>`;
-            summaryBody.appendChild(row);
-        }
-        const totalRow = document.createElement('tr');
-        totalRow.classList.add('table-secondary');
-        totalRow.innerHTML = `<td><strong>TOTAL</strong></td><td><strong>${formatCurrency(overallTotal)}</strong></td><td>-</td><td>100%</td><td>${sectionsArray.reduce((acc,s)=>acc+s.transactions,0)}</td>`;
-        summaryBody.appendChild(totalRow);
-    }
-    
-    function processSales() {
-        if (!salesFileLoaded || !bcFileLoaded) { alert("Please upload both Sales and BC Excel files first."); return; }
-        if (!salesData.length || !bcData.length) { alert("Data missing or empty."); return; }
-        
-        // Merge manual entries with sales data
-        const mergedSales = mergeManualEntriesIntoSales(salesData);
-        extractedAnalysisDate = extractAnalysisDateFromSales(mergedSales);
-        const categorized = categorizeSales(mergedSales);
-        if (!categorized || categorized.length === 0) { alert("Categorization failed."); return; }
-        const { sections, overallTotal } = computeKPIs(categorized);
-        renderDashboard(sections, overallTotal);
-    }
-    
-    function resetAll() {
-        salesData = []; bcData = []; salesFileLoaded = false; bcFileLoaded = false; extractedAnalysisDate = null;
-        manualEntries = [];
-        salesFileNameSpan.innerText = ""; bcFileNameSpan.innerText = "";
-        salesFileInput.value = ""; bcFileInput.value = "";
-        updateProcessButton();
-        kpiDashboard.style.display = "none";
-        renderManualEntries();
-    }
-    
-    // Event listeners
-    setupUploadZone(salesUploadZone, salesFileInput, onSalesLoaded, salesFileNameSpan);
-    setupUploadZone(bcUploadZone, bcFileInput, onBCLoaded, bcFileNameSpan);
-    processBtn.addEventListener('click', processSales);
-    resetBtn.addEventListener('click', resetAll);
-    addManualEntryBtn.addEventListener('click', addManualEntry);
-    
-    function setupUploadZone(zone, fileInput, onLoadCallback, fileNameSpan) {
-        zone.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            fileNameSpan.innerText = `📄 ${file.name}`;
-            parseExcelFile(file, (rows) => { if (rows && rows.length) onLoadCallback(rows, file.name); else alert("Invalid file"); });
+
+    function finalizeProcessing(dateSet) {
+        allDates = Array.from(dateSet).sort((a, b) => {
+            const [da, ma, ya] = a.split('-').map(Number);
+            const [db, mb, yb] = b.split('-').map(Number);
+            if (ya !== yb) return ya - yb;
+            if (ma !== mb) return ma - mb;
+            return da - db;
         });
-        zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.style.background = "#e9ecef"; });
-        zone.addEventListener('dragleave', () => { zone.style.background = "#fefefe"; });
-        zone.addEventListener('drop', (e) => {
-            e.preventDefault(); zone.style.background = "#fefefe";
-            const file = e.dataTransfer.files[0];
-            if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
-                fileInput.files = e.dataTransfer.files;
-                fileNameSpan.innerText = `📄 ${file.name}`;
-                parseExcelFile(file, (rows) => { if (rows && rows.length) onLoadCallback(rows, file.name); else alert("Invalid excel"); });
-            } else alert("Please upload .xlsx or .xls file");
+
+        ipgDateMap.clear();
+        uniqueIPGs.clear();
+        for (const sale of enrichedSales) {
+            uniqueIPGs.add(sale.ipg);
+            const key = sale.ipg + '||' + sale.dateStr;
+            ipgDateMap.set(key, (ipgDateMap.get(key) || 0) + sale.amount);
+        }
+
+        currentFilteredIPGs = new Set(uniqueIPGs);
+        selectAllToggle.checked = true;
+        renderIPGChips();
+        applyFiltersAndRender();
+        hideLoader();
+    }
+
+    // ---------- RENDER & FILTER ----------
+    function renderIPGChips() {
+        if (uniqueIPGs.size === 0) {
+            inventoryGroupsContainer.innerHTML = '<div class="text-muted text-center">No IPG groups found</div>';
+            return;
+        }
+        let html = '<div class="d-flex flex-wrap">';
+        const sorted = Array.from(uniqueIPGs).sort();
+        for (const g of sorted) {
+            const active = currentFilteredIPGs.has(g) ? 'active' : '';
+            html += `<span class="badge-ipg ${active}" data-ipg="${g.replace(/"/g, '&quot;')}">${g}</span>`;
+        }
+        html += '</div>';
+        inventoryGroupsContainer.innerHTML = html;
+
+        document.querySelectorAll('.badge-ipg').forEach(el => {
+            el.addEventListener('click', function() {
+                const g = this.dataset.ipg;
+                if (currentFilteredIPGs.has(g)) {
+                    currentFilteredIPGs.delete(g);
+                    this.classList.remove('active');
+                } else {
+                    currentFilteredIPGs.add(g);
+                    this.classList.add('active');
+                }
+                if (currentFilteredIPGs.size === uniqueIPGs.size) {
+                    selectAllToggle.checked = true;
+                } else {
+                    selectAllToggle.checked = false;
+                }
+                applyFiltersAndRender();
+            });
         });
     }
-    
-    renderManualEntries();
-    console.log("Ready — upload files, add manual invoices, then process. Manual entries go to RETAIL.");
+
+    function applyFiltersAndRender() {
+        const from = dateFrom.value ? new Date(dateFrom.value) : null;
+        const to = dateTo.value ? new Date(dateTo.value) : null;
+        currentDateFrom = (from && !isNaN(from)) ? from : null;
+        currentDateTo = (to && !isNaN(to)) ? to : null;
+
+        let dateCols = allDates;
+        if (currentDateFrom || currentDateTo) {
+            dateCols = allDates.filter(d => {
+                const [day, mon, year] = d.split('-').map(Number);
+                const dObj = new Date(2000 + year, mon - 1, day);
+                if (currentDateFrom && dObj < currentDateFrom) return false;
+                if (currentDateTo && dObj > currentDateTo) return false;
+                return true;
+            });
+        }
+
+        const ipgList = Array.from(currentFilteredIPGs).sort();
+        const rows = [];
+        for (const ipg of ipgList) {
+            const row = { ipg };
+            let total = 0;
+            for (const d of dateCols) {
+                const key = ipg + '||' + d;
+                const val = ipgDateMap.get(key) || 0;
+                row[d] = val;
+                total += val;
+            }
+            row._total = total;
+            rows.push(row);
+        }
+        rows.sort((a, b) => b._total - a._total);
+
+        currentPivotRows = rows;
+        renderPivotTable(rows, dateCols);
+        updateStats(rows, dateCols);
+        exportBtn.disabled = (rows.length === 0 || dateCols.length === 0);
+        comparisonSection.style.display = 'none';
+        lastCompareData = null;
+    }
+
+    function renderPivotTable(rows, dateCols) {
+        if (!rows.length || !dateCols.length) {
+            pivotHeader.innerHTML = '<th>Inventory Posting Group</th>';
+            pivotBody.innerHTML = '<tr><td class="text-muted text-center">No data for selected filters</td></tr>';
+            resultCountBadge.textContent = '0';
+            return;
+        }
+        let headerHtml = '<th>Inventory Posting Group</th>';
+        for (const d of dateCols) headerHtml += `<th class="text-end">${d}</th>`;
+        headerHtml += '<th class="text-end">Total</th>';
+        pivotHeader.innerHTML = headerHtml;
+
+        let bodyHtml = '';
+        for (const row of rows) {
+            let cols = `<td><strong>${row.ipg}</strong></td>`;
+            for (const d of dateCols) {
+                const val = row[d] || 0;
+                cols += `<td class="text-end">${val.toFixed(2)}</td>`;
+            }
+            cols += `<td class="text-end fw-bold">${row._total.toFixed(2)}</td>`;
+            bodyHtml += `<tr>${cols}</tr>`;
+        }
+        pivotBody.innerHTML = bodyHtml;
+        resultCountBadge.textContent = rows.length;
+    }
+
+    function updateStats(rows, dateCols) {
+        if (!rows.length || !dateCols.length) {
+            aggregatedStats.textContent = 'No data';
+            aggregationInfo.textContent = '';
+            return;
+        }
+        const displayTotal = totalProcessedSales;
+        const displayQty = totalProcessedQty;
+        const matchStatus = Math.abs(displayTotal - totalRawSales) < 0.01 ? '✅' : '⚠️';
+        const matchColor = Math.abs(displayTotal - totalRawSales) < 0.01 ? 'success' : 'error';
+        aggregatedStats.innerHTML = `
+            IPG: ${rows.length} · Days: ${dateCols.length} · Branches: ${allBranches.size} · 
+            <span class="total-match ${matchColor}">Total: ${displayTotal.toFixed(2)}</span>
+            <span class="badge ${Math.abs(displayTotal - totalRawSales) < 0.01 ? 'bg-success' : 'bg-warning'} ms-1">
+                ${matchStatus} Raw: ${totalRawSales.toFixed(2)}
+            </span>
+        `;
+        const keysCount = productToNo.size;
+        aggregationInfo.innerHTML = `
+            <span class="aggregation-stats">
+                <i class="bi bi-check-circle-fill text-success"></i> 
+                Aggregated: ${enrichedSales.length} unique sales records | 
+                Total Qty: ${displayQty.toFixed(0)} | 
+                Raw Qty: ${totalRawQty.toFixed(0)} |
+                ${Math.abs(displayQty - totalRawQty) < 0.01 ? '✅ Qty matches' : '⚠️ Qty mismatch'}
+                &nbsp;|&nbsp; <i class="bi bi-hash"></i> Unique product keys (No.): ${keysCount}
+            </span>
+        `;
+    }
+
+    // ---------- COMPARISON ----------
+    function buildCompare(mode) {
+        if (enrichedSales.length === 0 || !currentFilteredIPGs.size) {
+            alert('Please process data first.');
+            return;
+        }
+        const from = currentDateFrom;
+        const to = currentDateTo;
+        let filtered = enrichedSales.filter(s => {
+            if (!currentFilteredIPGs.has(s.ipg)) return false;
+            if (from && s.dateObj < from) return false;
+            if (to && s.dateObj > to) return false;
+            return true;
+        });
+        if (filtered.length === 0) {
+            alert('No sales data for the selected filters.');
+            return;
+        }
+        let title = 'Branch vs Branch · IPG Sales';
+        if (mode === 'pharmacy') {
+            filtered = filtered.filter(s => s.isPharmacy);
+            if (filtered.length === 0) {
+                alert('No pharmacy sales found. Check if "Service Point" contains "pharmacy".');
+                return;
+            }
+            title = 'Pharmacy IPG Sales Comparison';
+        }
+
+        const branchSet = new Set();
+        for (const s of filtered) {
+            const branchName = mode === 'pharmacy' ? s.branch : s.aggregatedBranch;
+            branchSet.add(branchName);
+        }
+        if (branchSet.size < 2) {
+            alert('Need at least 2 branches for comparison. Found: ' + Array.from(branchSet).join(', '));
+            return;
+        }
+
+        const branchMap = new Map();
+        const ipgs = new Set();
+        for (const sale of filtered) {
+            const branchName = mode === 'pharmacy' ? sale.branch : sale.aggregatedBranch;
+            const key = sale.ipg + '||' + branchName;
+            branchMap.set(key, (branchMap.get(key) || 0) + sale.amount);
+            ipgs.add(sale.ipg);
+        }
+
+        const branchList = Array.from(branchSet).sort();
+        const ipgList = Array.from(ipgs).sort();
+
+        lastCompareData = { mode, branchList, ipgList, branchMap, title };
+
+        let thead = '<tr><th>Inventory Posting Group</th>';
+        for (const b of branchList) thead += `<th class="text-end">${b}</th>`;
+        thead += '<th class="text-end">Diff (Max-Min)</th></tr>';
+        compareHead.innerHTML = thead;
+
+        let tbody = '';
+        for (const ipg of ipgList) {
+            const values = [];
+            let row = `<tr><td><strong>${ipg}</strong></td>`;
+            for (const b of branchList) {
+                const val = branchMap.get(ipg + '||' + b) || 0;
+                values.push(val);
+                row += `<td class="text-end">${val.toFixed(2)}</td>`;
+            }
+            const max = Math.max(...values);
+            const min = Math.min(...values);
+            row += `<td class="text-end fw-bold ${max-min > 0 ? 'text-primary' : 'text-muted'}">${(max-min).toFixed(2)}</td></tr>`;
+            tbody += row;
+        }
+
+        let totalRow = '<tr class="table-secondary"><td><strong>Grand Total</strong></td>';
+        const branchTotals = [];
+        for (const b of branchList) {
+            let bt = 0;
+            for (const ipg of ipgList) bt += branchMap.get(ipg + '||' + b) || 0;
+            branchTotals.push(bt);
+            totalRow += `<td class="text-end fw-bold">${bt.toFixed(2)}</td>`;
+        }
+        const maxB = Math.max(...branchTotals);
+        const minB = Math.min(...branchTotals);
+        totalRow += `<td class="text-end fw-bold">${(maxB-minB).toFixed(2)}</td></tr>`;
+        tbody += totalRow;
+
+        compareBody.innerHTML = tbody;
+        compareTitle.textContent = title;
+        comparisonSection.style.display = 'block';
+        comparisonSection.scrollIntoView({ behavior: 'smooth' });
+        currentCompareMode = mode;
+    }
+
+    // ---------- WEEK & MONTH TREND ----------
+    function getWeekNumber(dateObj) {
+        const d = new Date(dateObj);
+        d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
+        const week1 = new Date(d.getFullYear(), 0, 4);
+        return 1 + Math.round(((d - week1) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+    }
+    function getWeekLabel(dateObj) {
+        const year = dateObj.getFullYear();
+        const week = getWeekNumber(dateObj);
+        return `${year}-W${String(week).padStart(2, '0')}`;
+    }
+    function getMonthLabel(dateObj) {
+        const y = dateObj.getFullYear();
+        const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+        return `${y}-${m}`;
+    }
+
+    function getTrend(prev, current) {
+        if (prev === 0 && current === 0) return 'flat';
+        if (prev === 0) return 'up';
+        if (current === 0) return 'down';
+        const pct = ((current - prev) / prev) * 100;
+        if (pct > 2) return 'up';
+        if (pct < -2) return 'down';
+        return 'flat';
+    }
+
+    function calculateTrends() {
+        const weekMap = new Map();
+        const monthMap = new Map();
+        for (const sale of enrichedSales) {
+            if (!currentFilteredIPGs.has(sale.ipg)) continue;
+            if (currentDateFrom && sale.dateObj < currentDateFrom) continue;
+            if (currentDateTo && sale.dateObj > currentDateTo) continue;
+            const weekKey = sale.ipg + '||' + getWeekLabel(sale.dateObj);
+            weekMap.set(weekKey, (weekMap.get(weekKey) || 0) + sale.amount);
+            const monthKey = sale.ipg + '||' + getMonthLabel(sale.dateObj);
+            monthMap.set(monthKey, (monthMap.get(monthKey) || 0) + sale.amount);
+        }
+        const trendsResult = { week: {}, month: {} };
+        for (const ipg of currentFilteredIPGs) {
+            const weekData = [];
+            const monthData = [];
+            for (const [key, val] of weekMap) {
+                const [ipgKey, weekLabel] = key.split('||');
+                if (ipgKey === ipg) weekData.push({ period: weekLabel, sales: val });
+            }
+            weekData.sort((a, b) => a.period.localeCompare(b.period));
+            for (const [key, val] of monthMap) {
+                const [ipgKey, monthLabel] = key.split('||');
+                if (ipgKey === ipg) monthData.push({ period: monthLabel, sales: val });
+            }
+            monthData.sort((a, b) => a.period.localeCompare(b.period));
+            trendsResult.week[ipg] = weekData;
+            trendsResult.month[ipg] = monthData;
+        }
+        return trendsResult;
+    }
+
+    // ---------- EXPORT ----------
+    function exportToExcel() {
+        if (!currentPivotRows.length || !allDates.length) {
+            alert('No data to export. Please process data first.');
+            return;
+        }
+        try {
+            const wb = XLSX.utils.book_new();
+            const ipgArray = Array.from(currentFilteredIPGs).sort();
+            const trendsData = calculateTrends();
+
+            // ---- 1. Executive Summary ----
+            const execSummary = [
+                ['SALES MONITOR – EXECUTIVE SUMMARY'],
+                [],
+                ['METRIC', 'VALUE'],
+                ['Total Raw Sales (from POS)', totalRawSales.toFixed(2)],
+                ['Total Raw Quantity (from POS)', totalRawQty.toFixed(0)],
+                ['Total Processed Sales (all IPG)', totalProcessedSales.toFixed(2)],
+                ['Total Processed Quantity (all IPG)', totalProcessedQty.toFixed(0)],
+                ['Total Inventory Posting Groups', uniqueIPGs.size],
+                ['Total Branches', allBranches.size],
+                ['Total Aggregated Sales Records', enrichedSales.length],
+                ['Unique Product Keys ("No.") Resolved', productToNo.size],
+                ['Date Range Start', allDates.length ? allDates[0] : 'N/A'],
+                ['Date Range End', allDates.length ? allDates[allDates.length-1] : 'N/A'],
+                [],
+                ['INVENTORY POSTING GROUP TRENDS'],
+                ['IPG', 'Last Week Sales', 'Current Week Sales', 'Trend', 'Last Month Sales', 'Current Month Sales', 'Trend']
+            ];
+
+            for (const ipg of ipgArray) {
+                const weekData = trendsData.week[ipg] || [];
+                const monthData = trendsData.month[ipg] || [];
+                
+                let lastWeekSales = 0, currentWeekSales = 0;
+                if (weekData.length >= 2) {
+                    lastWeekSales = weekData[weekData.length - 2].sales;
+                    currentWeekSales = weekData[weekData.length - 1].sales;
+                } else if (weekData.length === 1) {
+                    currentWeekSales = weekData[0].sales;
+                }
+                const weekTrend = getTrend(lastWeekSales, currentWeekSales);
+                const weekTrendIcon = weekTrend === 'up' ? '↑' : weekTrend === 'down' ? '↓' : '→';
+                
+                let lastMonthSales = 0, currentMonthSales = 0;
+                if (monthData.length >= 2) {
+                    lastMonthSales = monthData[monthData.length - 2].sales;
+                    currentMonthSales = monthData[monthData.length - 1].sales;
+                } else if (monthData.length === 1) {
+                    currentMonthSales = monthData[0].sales;
+                }
+                const monthTrend = getTrend(lastMonthSales, currentMonthSales);
+                const monthTrendIcon = monthTrend === 'up' ? '↑' : monthTrend === 'down' ? '↓' : '→';
+                
+                execSummary.push([
+                    ipg,
+                    lastWeekSales.toFixed(2),
+                    currentWeekSales.toFixed(2),
+                    weekTrendIcon + ' ' + weekTrend,
+                    lastMonthSales.toFixed(2),
+                    currentMonthSales.toFixed(2),
+                    monthTrendIcon + ' ' + monthTrend
+                ]);
+            }
+
+            const wsExec = XLSX.utils.aoa_to_sheet(execSummary);
+            wsExec['!cols'] = [{wch:28}, {wch:18}, {wch:18}, {wch:12}, {wch:18}, {wch:18}, {wch:12}];
+            XLSX.utils.book_append_sheet(wb, wsExec, 'Executive_Summary');
+
+            // ---- 2. IPG Daily Pivot ----
+            const dateCols = allDates.filter(d => {
+                const [day, mon, year] = d.split('-').map(Number);
+                const dObj = new Date(2000 + year, mon - 1, day);
+                if (currentDateFrom && dObj < currentDateFrom) return false;
+                if (currentDateTo && dObj > currentDateTo) return false;
+                return true;
+            });
+            const pivotData = currentPivotRows.map(row => {
+                const obj = { 'Inventory Posting Group': row.ipg };
+                for (const d of dateCols) obj[d] = row[d] || 0;
+                obj['Total'] = row._total || 0;
+                return obj;
+            });
+            const wsPivot = XLSX.utils.json_to_sheet(pivotData);
+            XLSX.utils.book_append_sheet(wb, wsPivot, 'IPG_Daily_Pivot');
+
+            // ---- 3. Week over Week ----
+            const weekData = [];
+            for (const ipg of ipgArray) {
+                const data = trendsData.week[ipg] || [];
+                for (const w of data) weekData.push({ 'IPG': ipg, 'Week': w.period, 'Sales': w.sales });
+            }
+            if (weekData.length) {
+                const wsWeek = XLSX.utils.json_to_sheet(weekData);
+                XLSX.utils.book_append_sheet(wb, wsWeek, 'Week_Over_Week');
+            }
+
+            // ---- 4. Month over Month ----
+            const monthData = [];
+            for (const ipg of ipgArray) {
+                const data = trendsData.month[ipg] || [];
+                for (const m of data) monthData.push({ 'IPG': ipg, 'Month': m.period, 'Sales': m.sales });
+            }
+            if (monthData.length) {
+                const wsMonth = XLSX.utils.json_to_sheet(monthData);
+                XLSX.utils.book_append_sheet(wb, wsMonth, 'Month_Over_Month');
+            }
+
+            // ---- 5. Branch Comparison ----
+            if (lastCompareData) {
+                const cd = lastCompareData;
+                const compareRows = [];
+                for (const ipg of cd.ipgList) {
+                    const rowObj = { 'Inventory Posting Group': ipg };
+                    const vals = [];
+                    for (const b of cd.branchList) {
+                        const val = cd.branchMap.get(ipg + '||' + b) || 0;
+                        rowObj[b] = val;
+                        vals.push(val);
+                    }
+                    rowObj['Difference (Max-Min)'] = Math.max(...vals) - Math.min(...vals);
+                    compareRows.push(rowObj);
+                }
+                const totalRowObj = { 'Inventory Posting Group': 'GRAND TOTAL' };
+                const allVals = [];
+                for (const b of cd.branchList) {
+                    let bt = 0;
+                    for (const ipg of cd.ipgList) bt += cd.branchMap.get(ipg + '||' + b) || 0;
+                    totalRowObj[b] = bt;
+                    allVals.push(bt);
+                }
+                totalRowObj['Difference (Max-Min)'] = Math.max(...allVals) - Math.min(...allVals);
+                compareRows.push(totalRowObj);
+                const wsCompare = XLSX.utils.json_to_sheet(compareRows);
+                XLSX.utils.book_append_sheet(wb, wsCompare, cd.title);
+            }
+
+            // ---- 6. Sales Detail (with Qty + unique product key "No.") ----
+            const rawData = enrichedSales.map(s => ({
+                'Product No.': resolveProductNo(s.product) || 'N/A',
+                'Product Description': s.product,
+                'Amount': s.amount,
+                'Qty': s.qty,
+                'IPG': s.ipg,
+                'Original Branch': s.branch,
+                'Aggregated Branch': s.aggregatedBranch,
+                'Is Pharmacy': s.isPharmacy ? 'Yes' : 'No',
+                'Date': s.dateStr
+            }));
+            const wsRaw = XLSX.utils.json_to_sheet(rawData);
+            wsRaw['!cols'] = [
+                {wch:14}, {wch:45}, {wch:14}, {wch:10}, {wch:26},
+                {wch:24}, {wch:18}, {wch:12}, {wch:12}
+            ];
+            XLSX.utils.book_append_sheet(wb, wsRaw, 'Sales_Detail');
+
+            // ---- 7. Product Master (unique products with their "No." key) ----
+            const prodMap = new Map();
+            for (const s of enrichedSales) {
+                const k = s.product;
+                if (!prodMap.has(k)) {
+                    prodMap.set(k, {
+                        no: resolveProductNo(k) || 'N/A',
+                        desc: k,
+                        ipgSet: new Set(),
+                        amount: 0,
+                        qty: 0
+                    });
+                }
+                const e = prodMap.get(k);
+                e.ipgSet.add(s.ipg);
+                e.amount += s.amount;
+                e.qty += s.qty || 0;
+            }
+            const prodRows = Array.from(prodMap.values())
+                .map(e => ({
+                    'Product No.': e.no,
+                    'Product Description': e.desc,
+                    'Inventory Posting Group': Array.from(e.ipgSet).join(', '),
+                    'Total Amount': parseFloat(e.amount.toFixed(2)),
+                    'Total Qty': e.qty
+                }))
+                .sort((a, b) => String(a['Product No.']).localeCompare(String(b['Product No.']), undefined, { numeric: true }));
+            if (prodRows.length) {
+                const wsProd = XLSX.utils.json_to_sheet(prodRows);
+                wsProd['!cols'] = [{wch:14}, {wch:45}, {wch:28}, {wch:16}, {wch:12}];
+                XLSX.utils.book_append_sheet(wb, wsProd, 'Product_Master');
+            }
+
+            // ---- 8. Branch Aggregation ----
+            const aggMap = [];
+            for (const [orig, agg] of branchAggregationMap) {
+                aggMap.push({ 'Original Branch': orig, 'Aggregated Branch': agg });
+            }
+            if (aggMap.length) {
+                const wsAgg = XLSX.utils.json_to_sheet(aggMap);
+                XLSX.utils.book_append_sheet(wb, wsAgg, 'Branch_Aggregation');
+            }
+
+            XLSX.writeFile(wb, 'SalesMonitor_' + new Date().toISOString().slice(0,10) + '.xlsx');
+            alert('✅ Export completed successfully! Sheets: Executive Summary, IPG Daily Pivot, Week/Month trends, Sales Detail (with Product No.), Product Master, Branch Aggregation.');
+        } catch (e) {
+            alert('❌ Export error: ' + e.message);
+            console.error(e);
+        }
+    }
+
+    // ---------- UTILITY ----------
+    function selectAllIPGs() {
+        currentFilteredIPGs = new Set(uniqueIPGs);
+        selectAllToggle.checked = true;
+        renderIPGChips();
+        applyFiltersAndRender();
+    }
+    function clearDateFilter() {
+        dateFrom.value = '';
+        dateTo.value = '';
+        currentDateFrom = null;
+        currentDateTo = null;
+        applyFiltersAndRender();
+    }
+
+    // ---------- INIT ----------
+    setupDragDrop(salesDropZone, salesInput, salesFileNameSpan);
+    setupDragDrop(bcDropZone, bcInput, bcFileNameSpan);
+
+    processBtn.addEventListener('click', processData);
+    exportBtn.addEventListener('click', exportToExcel);
+    applyMappingBtn.addEventListener('click', applyManualMapping);
+    autoMapFallbackBtn.addEventListener('click', function() {
+        applyFuzzyFallback();
+        alert('Fuzzy fallback applied to unmatched products. Review and click "Apply Mapping" to finalize.');
+    });
+
+    selectAllToggle.addEventListener('change', function(e) {
+        if (e.target.checked) selectAllIPGs();
+        else { currentFilteredIPGs.clear(); renderIPGChips(); applyFiltersAndRender(); }
+    });
+
+    showAllGroupsBtn.addEventListener('click', selectAllIPGs);
+    applyDateBtn.addEventListener('click', applyFiltersAndRender);
+    clearDateBtn.addEventListener('click', clearDateFilter);
+    compareBranchesBtn.addEventListener('click', () => buildCompare('branch'));
+    pharmacyCompareBtn.addEventListener('click', () => buildCompare('pharmacy'));
+    closeCompareBtn.addEventListener('click', () => { comparisonSection.style.display = 'none'; });
+
+    processBtn.disabled = true;
+    console.log('✅ Sales Monitor ready – enhanced aggregation, quantity tracking & BC "No." product keys');
 </script>
 </body>
 </html>
